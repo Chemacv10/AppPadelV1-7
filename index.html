@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#2563eb">
+  <title>Escuela de Pádel</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/inicio.png">
+  <style>
+    /* ── Próximas clases ── */
+    .pcl-card {
+      background: var(--card); border: 1px solid var(--borde);
+      border-radius: 11px; display: flex; align-items: center;
+      gap: 10px; padding: 10px 12px; margin-bottom: 6px;
+    }
+    .pcl-fecha { display: flex; flex-direction: column; align-items: center; min-width: 36px; }
+    .pcl-fecha-dia { font-size: 10px; font-weight: 900; color: var(--azul); text-transform: uppercase; }
+    .pcl-fecha-num { font-size: 20px; font-weight: 900; color: var(--texto); line-height: 1.1; }
+    .pcl-sep       { width: 1px; height: 34px; background: var(--borde); flex-shrink: 0; }
+    .pcl-info      { flex: 1; min-width: 0; }
+    .pcl-nombre    { font-size: 13px; font-weight: 800; color: var(--texto); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pcl-meta      { font-size: 11px; color: var(--sutil); font-weight: 600; margin-top: 2px; }
+    .pcl-pista     { font-size: 10px; font-weight: 800; color: var(--azul); background: #dbeafe; border-radius: 6px; padding: 3px 8px; flex-shrink: 0; }
+
+    /* ── Pendientes (neutral, sin colores de alerta) ── */
+    .alerta-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 11px; margin-bottom: 6px;
+      background: var(--card); border: 1.5px solid var(--borde);
+    }
+    .alerta-card.warn   { background: var(--card); border-color: var(--borde); }
+    .alerta-card.info   { background: var(--card); border-color: var(--borde); }
+    .alerta-card.danger { background: var(--card); border-color: var(--borde); }
+    .alerta-ico   { font-size: 18px; flex-shrink: 0; }
+    .alerta-titulo{ font-size: 12px; font-weight: 900; color: var(--texto); }
+    .alerta-sub   { font-size: 11px; color: var(--sutil); font-weight: 600; margin-top: 1px; }
+
+    /* ── Top jugadores ── */
+    .top-row {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      background: var(--card); border: 1px solid var(--borde); border-radius: 11px; margin-bottom: 6px;
+    }
+    .top-pos    { font-size: 14px; font-weight: 900; min-width: 24px; text-align: center; }
+    .top-nombre { flex: 1; font-size: 13px; font-weight: 800; color: var(--texto); }
+    .top-pts    { font-size: 14px; font-weight: 900; color: var(--azul); text-align: right; }
+    .top-sub    { font-size: 10px; color: var(--sutil); font-weight: 600; text-align: right; }
+
+    /* ── Logo upload ── */
+    .logo-upload-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 6px; margin-bottom: 14px; cursor: pointer;
+    }
+    .logo-upload-img  { width: 72px; height: 72px; border-radius: 16px; object-fit: contain; border: 2px solid var(--borde); background: #f8fafc; }
+    .logo-upload-hint { font-size: 11px; color: var(--sutil); font-weight: 600; }
+    #logo-file-input  { display: none; }
+
+    /* ── Menú usuario ── */
+    .menu-fila { display: flex; align-items: center; gap: 12px; padding: 13px 15px; cursor: pointer; border-radius: 12px; transition: background .15s; }
+    .menu-fila:hover { background: #f1f5f9; }
+    .menu-fila-ico { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .menu-fila-ico.azul { background: #dbeafe; }
+    .menu-fila-ico.rojo { background: #fee2e2; }
+    .menu-fila-titulo { font-size: 14px; font-weight: 800; color: var(--texto); }
+    .menu-fila-sub    { font-size: 11px; color: var(--sutil); font-weight: 600; margin-top: 1px; }
+    .menu-sep { height: 1px; background: var(--borde); margin: 4px 15px; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div id="header-container"></div>
+  <nav id="nav-container"></nav>
+
+  <main class="content" id="main">
+
+    <div class="sec">
+      <img src="icons/inicio.png" alt="Inicio">
+      <div class="sec-title">Inicio</div>
+    </div>
+
+    <!-- 1. PRÓXIMAS CLASES -->
+    <div class="ini-sec">
+      <div class="ini-sec-header">
+        <div class="ini-sec-title"><img src="icons/pistas.png" alt="">Próximas clases</div>
+        <a class="ini-sec-link" href="pistas.html">Ver pistas →</a>
+      </div>
+      <div id="lista-proximas"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- 2. ALERTAS (se oculta si no hay) -->
+    <div class="ini-sec" id="sec-alertas" style="display:none">
+      <div class="ini-sec-header">
+        <div class="ini-sec-title"><img src="icons/inicio.png" alt="">Pendientes</div>
+      </div>
+      <div id="lista-alertas"></div>
+    </div>
+
+    <!-- 3. ÚLTIMOS TORNEOS -->
+    <div class="ini-sec">
+      <div class="ini-sec-header">
+        <div class="ini-sec-title"><img src="icons/torneos.png" alt="">Últimos torneos</div>
+        <a class="ini-sec-link" href="torneos.html">Ver todos →</a>
+      </div>
+      <div id="lista-torneos"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- 4. TOP JUGADORES -->
+    <div class="ini-sec">
+      <div class="ini-sec-header">
+        <div class="ini-sec-title"><img src="icons/stats.png" alt="">Top jugadores</div>
+        <a class="ini-sec-link" href="stats.html">Ver ranking →</a>
+      </div>
+      <div id="lista-top"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- 5. EJERCICIOS MÁS USADOS -->
+    <div class="ini-sec">
+      <div class="ini-sec-header">
+        <div class="ini-sec-title"><img src="icons/ejercicios.png" alt="">Ejercicios más usados</div>
+        <a class="ini-sec-link" href="ejercicios.html">Ver todos →</a>
+      </div>
+      <div id="lista-ejercicios"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+  </main>
+
+  <!-- ── Panel menú usuario ── -->
+  <div class="cfg-overlay" id="menu-overlay" onclick="if(event.target===this)UI.cerrarMenu()">
+    <div class="cfg-sheet">
+      <div class="cfg-hdr">
+        <span class="cfg-titulo">Menú</span>
+        <button class="cfg-close" onclick="UI.cerrarMenu()">✕</button>
+      </div>
+      <div style="padding:10px 11px 0">
+        <div class="menu-fila" onclick="UI.abrirConfig()">
+          <div class="menu-fila-ico azul">⚙️</div>
+          <div>
+            <div class="menu-fila-titulo">Configurar escuela</div>
+            <div class="menu-fila-sub">Nombre y logo</div>
+          </div>
+          <span style="color:var(--sutil);font-size:16px;margin-left:auto">›</span>
+        </div>
+        <div class="menu-sep"></div>
+        <div class="menu-fila" onclick="logout()">
+          <div class="menu-fila-ico rojo">🚪</div>
+          <div>
+            <div class="menu-fila-titulo">Cerrar sesión</div>
+            <div class="menu-fila-sub">Salir de la cuenta actual</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Panel configurar escuela ── -->
+  <div class="cfg-overlay" id="config-overlay" onclick="if(event.target===this)UI.cerrarConfig()">
+    <div class="cfg-sheet">
+      <div class="cfg-hdr">
+        <span class="cfg-titulo">⚙️ Configurar escuela</span>
+        <button class="cfg-close" onclick="UI.cerrarConfig()">✕</button>
+      </div>
+      <div style="padding:14px 15px">
+        <div class="cfg-sec-lbl">Logo</div>
+        <div class="logo-upload-wrap" onclick="document.getElementById('logo-file-input').click()">
+          <img id="logo-preview" class="logo-upload-img" src="icons/inicio.png" alt="Logo">
+          <span class="logo-upload-hint">Toca para cambiar el logo</span>
+        </div>
+        <input type="file" id="logo-file-input" accept="image/*" onchange="onLogoChange(event)">
+        <div class="cfg-sec-lbl" style="margin-top:4px">Nombre de la escuela</div>
+        <input class="finp" id="cfg-nombre" type="text" placeholder="Ej: Club Pádel Norte" style="margin-bottom:14px">
+        <button class="cfg-listo" onclick="guardarConfig()">✓ Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmación -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <div class="confirm-titulo">¿Estás seguro?</div>
+      <div class="confirm-texto" id="confirm-texto"></div>
+      <div class="confirm-btns">
+        <button class="cbtn" onclick="document.getElementById('confirm-overlay').classList.remove('open')">Cancelar</button>
+        <button class="cbtn danger" id="confirm-ok">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script>
+
+const DIAS  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DIAS_LARGO = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+const ICONO_TORNEO = {
+  'Americano':'icons/americano.png','Escalera':'icons/escalera.png',
+  'Mexicano':'icons/mexicano.png','Round Robin':'icons/robin.png',
+};
+const ICONO_CAT = {
+  'Calentamiento':'icons/calentamiento.png','Carritos':'icons/carritos.png',
+  'Situaciones':'icons/situaciones.png','Partiditos':'icons/partiditos.png','Genérico':'icons/generico.png',
+};
+
+let _logoBase64 = null;
+
+// ── 1. PRÓXIMAS CLASES ─────────────────────────
+function renderProximas(semanas, grupos) {
+  const el = document.getElementById('lista-proximas');
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const grupoMap = {};
+  grupos.forEach(g => grupoMap[g.id] = g.nombre);
+
+  const bloques = [];
+  semanas.forEach(s => {
+    const inicio = new Date(s.fecha_inicio + 'T00:00:00');
+    (s.bloques_pista || []).forEach(b => {
+      if (b.tipo && b.tipo !== 'Clase') return;
+      // b.dia es TEXT numérico: 0=Lun,1=Mar,...,6=Dom (offset desde lunes)
+      const diaIdx = Number(b.dia);
+      if (isNaN(diaIdx)) return;
+      const fecha = new Date(inicio);
+      fecha.setDate(inicio.getDate() + diaIdx);
+      if (fecha >= hoy) bloques.push({ ...b, fecha });
+    });
+  });
+
+  bloques.sort((a, b) => {
+    const df = a.fecha - b.fecha;
+    return df !== 0 ? df : (a.hora_inicio||'').localeCompare(b.hora_inicio||'');
+  });
+
+  const proximos = bloques.slice(0, 6);
+  if (!proximos.length) {
+    el.innerHTML = '<div class="ini-empty">Sin clases próximas en pistas</div>'; return;
+  }
+
+  el.innerHTML = proximos.map(b => {
+    const diaNom  = DIAS[b.fecha.getDay()];
+    const diaNum  = b.fecha.getDate();
+    const mesNom  = MESES[b.fecha.getMonth()];
+    const hora    = b.hora_inicio ? b.hora_inicio.slice(0,5) : '';
+    const horaFin = b.hora_fin    ? b.hora_fin.slice(0,5)    : '';
+    const nombre  = (b.grupo_id && grupoMap[b.grupo_id]) || b.actividad || 'Clase';
+    return `
+      <div class="pcl-card">
+        <div class="pcl-fecha">
+          <div class="pcl-fecha-dia">${diaNom}</div>
+          <div class="pcl-fecha-num">${diaNum}</div>
+          <div style="font-size:9px;color:var(--sutil);font-weight:700">${mesNom}</div>
+        </div>
+        <div class="pcl-sep"></div>
+        <div class="pcl-info">
+          <div class="pcl-nombre">${nombre}</div>
+          <div class="pcl-meta">${hora}${horaFin?'–'+horaFin:''}</div>
+        </div>
+        ${b.pista?`<div class="pcl-pista">${b.pista}</div>`:''}
+      </div>`;
+  }).join('');
+}
+
+// ── 2. ALERTAS ─────────────────────────────────
+function renderAlertas({ clases, torneos, alumnos }) {
+  const alertas = [];
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const en7 = new Date(hoy); en7.setDate(hoy.getDate()+7);
+
+  // Clases programadas sin pista en los próximos 7 días
+  const sinPista = (clases||[]).filter(c => {
+    const f = new Date(c.fecha+'T00:00:00');
+    return c.estado==='Programada' && f>=hoy && f<=en7;
+  });
+  if (sinPista.length)
+    alertas.push({ tipo:'info', ico:'📋', titulo:`${sinPista.length} clase${sinPista.length>1?'s':''} programadas esta semana`, sub:'Comprueba que tienen pista asignada', href:'clases.html' });
+
+  // Torneos en curso
+  const activos = (torneos||[]).filter(t => t.estado==='activo'||t.estado==='en_curso');
+  if (activos.length)
+    alertas.push({ tipo:'info', ico:'🏆', titulo:`${activos.length} torneo${activos.length>1?'s':''} en curso`, sub:'Pendiente de resultados', href:'torneos.html' });
+
+  // (Alumnos sin grupo eliminado — puede ser intencionado, ej: particulares)
+
+  const sec = document.getElementById('sec-alertas');
+  const el  = document.getElementById('lista-alertas');
+  if (!alertas.length) { sec.style.display='none'; return; }
+  sec.style.display = 'block';
+  el.innerHTML = alertas.map(a => `
+    <a href="${a.href}" class="alerta-card ${a.tipo}" style="text-decoration:none">
+      <div class="alerta-ico">${a.ico}</div>
+      <div style="flex:1">
+        <div class="alerta-titulo">${a.titulo}</div>
+        <div class="alerta-sub">${a.sub}</div>
+      </div>
+      <span style="color:var(--sutil);font-size:14px">›</span>
+    </a>`).join('');
+}
+
+// ── 3. ÚLTIMOS TORNEOS ─────────────────────────
+function renderTorneos(torneos) {
+  const el = document.getElementById('lista-torneos');
+  if (!torneos.length) { el.innerHTML='<div class="ini-empty">Sin torneos aún</div>'; return; }
+  el.innerHTML = torneos.map(t => {
+    const chip = (t.estado==='activo'||t.estado==='en_curso')
+      ? '<span class="chip cam">En curso</span>'
+      : '<span class="chip cgr">Finalizado</span>';
+    return `
+      <a class="ini-row" href="torneos.html?id=${t.id}">
+        <div class="ini-ico"><img src="${ICONO_TORNEO[t.tipo]||'icons/torneos.png'}" alt=""></div>
+        <div class="ini-info">
+          <div class="ini-name">${t.nombre}</div>
+          <div class="ini-sub">${formatFecha(t.fecha)} · ${t.num_jugadores||'?'} jugadores</div>
+        </div>
+        ${chip}
+      </a>`;
+  }).join('');
+}
+
+// ── 4. TOP JUGADORES ───────────────────────────
+function renderTop(partidos) {
+  const el = document.getElementById('lista-top');
+  const jugados = (partidos||[]).filter(p => p.resultado_a != null);
+  if (!jugados.length) {
+    el.innerHTML='<div class="ini-empty">Sin partidos validados aún<br><span style="font-size:11px">Los resultados de torneos aparecerán aquí</span></div>'; return;
+  }
+
+  const stats = {};
+  jugados.forEach(p => {
+    [p.pareja_a, p.pareja_b].forEach(n => { if (!stats[n]) stats[n]={pj:0,pg:0,pts:0}; });
+    stats[p.pareja_a].pj++; stats[p.pareja_b].pj++;
+    const ra=+p.resultado_a, rb=+p.resultado_b;
+    if (ra>rb)      { stats[p.pareja_a].pg++; stats[p.pareja_a].pts+=3; stats[p.pareja_b].pts+=1; }
+    else if (rb>ra) { stats[p.pareja_b].pg++; stats[p.pareja_b].pts+=3; stats[p.pareja_a].pts+=1; }
+    else            { stats[p.pareja_a].pts+=1; stats[p.pareja_b].pts+=1; }
+  });
+
+  const ranking = Object.entries(stats)
+    .map(([nombre,s]) => ({ nombre, ...s, pct:Math.round(s.pg/s.pj*100) }))
+    .sort((a,b) => b.pts-a.pts || b.pct-a.pct)
+    .slice(0,5);
+
+  const medallas = ['🥇','🥈','🥉'];
+  el.innerHTML = ranking.map((r,i) => `
+    <div class="top-row">
+      <div class="top-pos">${medallas[i]||(i+1)}</div>
+      <div class="top-nombre">${r.nombre}</div>
+      <div>
+        <div class="top-pts">${r.pts} pts</div>
+        <div class="top-sub">${r.pg}V · ${r.pj}PJ · ${r.pct}%</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── 5. EJERCICIOS ──────────────────────────────
+function renderEjercicios(ejercicios) {
+  const el = document.getElementById('lista-ejercicios');
+  if (!ejercicios.length) { el.innerHTML='<div class="ini-empty">Sin uso registrado aún</div>'; return; }
+  el.innerHTML = ejercicios.map(e => `
+    <div class="ini-row">
+      <div class="ini-ico"><img src="${ICONO_CAT[e.categoria]||'icons/ejercicios.png'}" alt=""></div>
+      <div class="ini-info">
+        <div class="ini-name">${e.nombre}</div>
+        <div class="ini-sub">${e.categoria||''} · ${e.usos||0} usos</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── LOGO ───────────────────────────────────────
+function onLogoChange(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { _logoBase64=ev.target.result; document.getElementById('logo-preview').src=_logoBase64; };
+  reader.readAsDataURL(file);
+}
+
+async function guardarConfig() {
+  const nombre = document.getElementById('cfg-nombre').value.trim();
+  if (!nombre) { toast('Escribe el nombre','err'); return; }
+  try {
+    const { error } = await _sb.from('escuelas').update({ nombre }).eq('id', Store.escuelaId);
+    if (error) throw error;
+    if (_logoBase64) localStorage.setItem('escuela_logo_'+Store.escuelaId, _logoBase64);
+    localStorage.setItem('escuela_nombre_'+Store.escuelaId, nombre);
+    actualizarHeader(nombre);
+    toast('✓ Guardado');
+    document.getElementById('config-overlay').classList.remove('open');
+    document.getElementById('menu-overlay').classList.remove('open');
+  } catch(err) { console.error(err); toast('Error al guardar','err'); }
+}
+
+function actualizarHeader(nombre) {
+  const logo = Store.escuelaId
+    ? (localStorage.getItem('escuela_logo_'+Store.escuelaId)||'icons/inicio.png')
+    : 'icons/inicio.png';
+  renderHeader({ titulo:nombre||'Escuela de Pádel', subtitulo:'Panel de gestión', icono:logo, botonDerecho:'menu' });
+  renderNav('inicio');
+}
+
+// ── UI NAMESPACE ───────────────────────────────
+UI.menuUsuario = () => document.getElementById('menu-overlay').classList.add('open');
+UI.cerrarMenu  = () => document.getElementById('menu-overlay').classList.remove('open');
+UI.abrirConfig = () => {
+  UI.cerrarMenu();
+  document.getElementById('cfg-nombre').value = document.querySelector('.htitle')?.textContent||'';
+  const logo = Store.escuelaId?(localStorage.getItem('escuela_logo_'+Store.escuelaId)||'icons/inicio.png'):'icons/inicio.png';
+  document.getElementById('logo-preview').src = logo;
+  _logoBase64 = null;
+  document.getElementById('config-overlay').classList.add('open');
+};
+UI.cerrarConfig = () => document.getElementById('config-overlay').classList.remove('open');
+
+// ── INIT ───────────────────────────────────────
+async function init() {
+  renderHeader({ titulo:'Escuela de Pádel', subtitulo:'Panel de gestión', icono:'icons/inicio.png', botonDerecho:'menu' });
+  renderNav('inicio');
+
+  try {
+    await initStore();
+
+    // Obtener IDs de torneos para buscar partidos
+    const { data: torneoIds } = await _sb.from('torneos').select('id').eq('escuela_id', Store.escuelaId);
+
+    const ids = (torneoIds||[]).map(t=>t.id);
+
+    const [escuelaRes, semanasRes, torneosRes, partidosRes, alumnosRes, ejerciciosRes, clasesRes, gruposRes] = await Promise.all([
+      _sb.from('escuelas').select('nombre').eq('id', Store.escuelaId).single(),
+      _sb.from('semanas_pista').select('*, bloques_pista(*)').eq('escuela_id', Store.escuelaId).order('fecha_inicio'),
+      _sb.from('torneos').select('*').eq('escuela_id', Store.escuelaId).order('fecha',{ascending:false}).limit(3),
+      ids.length ? _sb.from('partidos').select('pareja_a,pareja_b,resultado_a,resultado_b').in('torneo_id', ids) : { data:[] },
+      _sb.from('alumnos').select('id,grupo_id').eq('escuela_id', Store.escuelaId),
+      _sb.from('ejercicios').select('id,nombre,categoria,usos').eq('escuela_id', Store.escuelaId).order('usos',{ascending:false}).limit(5),
+      _sb.from('clases').select('id,fecha,estado').eq('escuela_id', Store.escuelaId),
+      _sb.from('grupos').select('id,nombre').eq('escuela_id', Store.escuelaId),
+    ]);
+
+    if (escuelaRes.data?.nombre) {
+      localStorage.setItem('escuela_nombre_'+Store.escuelaId, escuelaRes.data.nombre);
+      actualizarHeader(escuelaRes.data.nombre);
+    }
+
+    renderProximas(semanasRes.data||[], gruposRes.data||[]);
+    renderAlertas({ clases:clasesRes.data||[], torneos:torneosRes.data||[], alumnos:alumnosRes.data||[] });
+    renderTorneos(torneosRes.data||[]);
+    renderTop(partidosRes.data||[]);
+    renderEjercicios(ejerciciosRes.data||[]);
+
+  } catch(err) {
+    console.error(err);
+    ['lista-proximas','lista-torneos','lista-top','lista-ejercicios'].forEach(id => showError(id,'Error al cargar'));
+  }
+}
+
+init();
+</script>
+</body>
+</html>

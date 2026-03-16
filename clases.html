@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Clases — Escuela de Pádel</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .clase-fecha{font-size:16px;font-weight:900;color:var(--texto)}
+    .clase-meta{display:flex;align-items:center;gap:5px;margin-top:3px}
+    .clase-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .clase-grupo{font-size:12px;font-weight:700;color:var(--sub)}
+    .clase-estado{font-size:12px;font-weight:900}
+    .clase-resumen{font-size:11px;color:var(--sutil);font-weight:600;margin-top:2px}
+    .ej-list{margin-bottom:8px}
+    .ej-item{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--fondo);border-radius:9px;margin-bottom:5px}
+    .ej-ico{width:32px;height:32px;border-radius:8px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+    .ej-ico img{width:26px;height:26px;object-fit:contain}
+    .ej-nombre{font-size:12px;font-weight:800;color:var(--texto)}
+    .ej-sub{font-size:10px;color:var(--sutil);font-weight:600;margin-top:1px}
+    .ej-no-real{font-size:10px;color:var(--rojo);font-weight:800;margin-left:auto;flex-shrink:0}
+    .asist-wrap{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+    .asist-chip{background:#dcfce7;color:#15803d;border-radius:18px;padding:3px 9px;font-size:11px;font-weight:800}
+    .wizard-steps{display:flex;gap:4px;padding:12px 15px 0}
+    .wstep{flex:1;height:4px;border-radius:2px;background:var(--borde);transition:background .3s}
+    .wstep.done{background:var(--verde)}.wstep.active{background:var(--azul)}
+    .wizard-hdr{padding:10px 15px 0}
+    .wizard-titulo{font-size:18px;font-weight:900;color:var(--texto);margin-bottom:2px}
+    .wizard-sub{font-size:12px;color:var(--sutil);font-weight:600;margin-bottom:12px}
+    .estado-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .estado-btn{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--borde);background:#f8fafc;cursor:pointer;font-size:13px;font-weight:800;color:var(--sub);font-family:inherit;transition:all .15s}
+    .estado-btn img{width:28px;height:28px;object-fit:contain}
+    .estado-btn.sel-Programada{border-color:var(--azul);background:#dbeafe;color:#1e40af}
+    .estado-btn.sel-Realizada{border-color:var(--verde);background:#dcfce7;color:#15803d}
+    .estado-btn.sel-Suspendida{border-color:var(--rojo);background:#fee2e2;color:#dc2626}
+    .estado-btn.sel-Festivo{border-color:var(--naranja);background:#fef9c3;color:#92400e}
+    .hora-row{display:flex;gap:5px;align-items:center}
+    .hora-row .fsel{flex:1}
+    .hora-sep{font-size:14px;font-weight:900;color:var(--sutil)}
+    .al-check{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1.5px solid var(--borde);border-radius:11px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+    .al-check.checked{border-color:var(--verde);background:#f0fdf4}
+    .check-box{width:24px;height:24px;border-radius:7px;border:2px solid var(--borde);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:var(--card)}
+    .al-check.checked .check-box{background:var(--verde);border-color:var(--verde);color:#fff}
+    .check-todos{display:flex;gap:8px;margin-bottom:10px}
+    .btn-todos{flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--borde);background:var(--card);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;color:var(--texto)}
+    .btn-todos.act{background:var(--verde);border-color:var(--verde);color:#fff}
+    .modo-btns{display:flex;gap:8px;margin-bottom:12px}
+    .modo-btn{flex:1;padding:11px;border-radius:12px;border:1.5px solid var(--borde);background:var(--card);font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;color:var(--sub);transition:all .15s}
+    .modo-btn.active{background:var(--texto);border-color:var(--texto);color:#fff}
+    .estr-box{background:#f0f4ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+    .estr-lbl{font-size:10px;font-weight:900;color:var(--sutil);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+    .estr-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .estr-nom{flex:1;font-size:13px;font-weight:800;color:var(--texto);display:flex;align-items:center;gap:6px}
+    .estr-nom img{width:20px;height:20px;object-fit:contain}
+    .counter{display:flex;align-items:center;border:1.5px solid var(--borde);border-radius:10px;overflow:hidden;background:var(--card)}
+    .counter button{width:32px;height:32px;border:none;background:none;font-size:16px;font-weight:900;cursor:pointer;color:var(--texto);font-family:inherit}
+    .counter span{min-width:28px;text-align:center;font-size:14px;font-weight:900}
+    .btn-generar{width:100%;padding:11px;border-radius:12px;border:1.5px solid #bfdbfe;background:#eff6ff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;color:var(--azul);margin-bottom:12px}
+    .bloque-form{background:var(--card);border:1.5px solid var(--borde);border-radius:12px;padding:11px 12px;margin-bottom:8px}
+    .bloque-form-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .bloque-form-cat{flex:1;font-size:13px;font-weight:900;color:var(--texto);display:flex;align-items:center;gap:6px}
+    .bloque-form-cat img{width:22px;height:22px;object-fit:contain}
+    .bloque-ord-btns{display:flex;gap:4px}
+    .btn-ord{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--borde);background:#f8fafc;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sub)}
+    .btn-del{width:28px;height:28px;border-radius:8px;border:1.5px solid #fca5a5;background:#fff5f5;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--rojo)}
+    .bloque-ej-sel{width:100%;background:#f8fafc;border:1.5px solid var(--borde);border-radius:9px;padding:9px 28px 9px 11px;font-size:13px;font-weight:700;color:var(--texto);outline:none;font-family:inherit;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;margin-bottom:7px}
+    .bloque-row{display:flex;align-items:center;gap:8px}
+    .bloque-dur{flex:1;background:#f8fafc;border:1.5px solid var(--borde);border-radius:9px;padding:8px 28px 8px 11px;font-size:12px;font-weight:700;color:var(--texto);outline:none;font-family:inherit;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+    .no-real-lbl{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--sutil);cursor:pointer;flex-shrink:0}
+    .no-real-lbl input{accent-color:var(--rojo)}
+    .add-bloques{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+    .add-blq{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:20px;border:1.5px solid var(--borde);background:var(--card);font-size:12px;font-weight:800;cursor:pointer;color:var(--sub);font-family:inherit}
+    .add-blq img{width:18px;height:18px;object-fit:contain}
+    .wizard-btns{display:flex;gap:8px;padding:12px 15px 0;border-top:1px solid var(--borde);margin-top:8px}
+    .wbtn{flex:1;padding:12px;border-radius:11px;font-size:13px;font-weight:900;cursor:pointer;border:1.5px solid var(--borde);background:var(--card);color:var(--texto);font-family:inherit}
+    .wbtn.prim{background:var(--azul);color:#fff;border-color:var(--azul)}
+    .wbtn.verde{background:var(--verde);color:#fff;border-color:var(--verde)}
+    .filtros-wrap{display:flex;gap:8px;margin-bottom:10px}
+    .filtros-wrap > div{flex:1}
+    .nuevo-inline{display:flex;gap:6px;align-items:center;margin:-4px 0 8px;animation:fadeIn .15s ease}
+    .nuevo-inline .finp{flex:1}
+    .nuevo-inline .sbtn{padding:9px 12px;min-width:0;flex-shrink:0}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  </style>
+</head>
+<body>
+<div class="page">
+  <div id="header-container"></div>
+  <nav id="nav-container"></nav>
+
+  <main class="content">
+    <div class="filtros-wrap">
+      <div>
+        <div class="filter-label">Estado</div>
+        <select class="fsel" id="filtro-estado" onchange="filtrar()">
+          <option value="">Todos</option>
+          <option>Programada</option><option>Realizada</option>
+          <option>Suspendida</option><option>Festivo</option>
+        </select>
+      </div>
+      <div>
+        <div class="filter-label">Grupo</div>
+        <select class="fsel" id="filtro-grupo" onchange="filtrar()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+    </div>
+    <div class="sec">
+      <img src="icons/clases.png">
+      <div class="sec-title">Clases</div>
+      <div class="sec-count" id="contador">—</div>
+    </div>
+    <div id="lista-clases"><div class="loading"><div class="spinner"></div></div></div>
+  </main>
+
+  <button class="fab" onclick="abrirWizard()">+</button>
+
+  <!-- WIZARD -->
+  <div class="overlay" id="wizard-overlay">
+    <div class="sheet" style="max-height:94vh">
+      <div class="sheet-handle"></div>
+      <div class="wizard-steps" id="wizard-steps"></div>
+      <input type="hidden" id="cl-id">
+
+      <!-- FASE 1 -->
+      <div id="fase-1">
+        <div class="wizard-hdr">
+          <div class="wizard-titulo" id="wizard-titulo">Nueva Clase</div>
+          <div class="wizard-sub">Datos básicos</div>
+        </div>
+        <div style="padding:0 15px;margin-bottom:12px">
+          <div class="flbl" style="margin-bottom:6px">Estado *</div>
+          <div class="estado-grid">
+            <button class="estado-btn sel-Programada" onclick="selEstado(this,'Programada')"><img src="icons/programada.png">Programada</button>
+            <button class="estado-btn" onclick="selEstado(this,'Realizada')"><img src="icons/realizada.png">Realizada</button>
+            <button class="estado-btn" onclick="selEstado(this,'Suspendida')"><img src="icons/suspendida.png">Suspendida</button>
+            <button class="estado-btn" onclick="selEstado(this,'Festivo')"><img src="icons/festivo.png">Festivo</button>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fgrp">
+            <div class="flbl">Tipo de clase</div>
+            <select class="fsel" id="cl-tipo" onchange="onSelectNuevoTipo(this)"></select>
+          </div>
+          <div class="fgrp">
+            <div class="flbl">Grupo</div>
+            <select class="fsel" id="cl-grupo"><option value="">— Sin grupo —</option></select>
+          </div>
+        </div>
+        <div class="nuevo-inline" id="nuevo-tipo-wrap" style="display:none">
+          <input class="finp" id="nuevo-tipo-inp" placeholder="Ej: Clase-partido"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarNuevoTipo();}">
+          <button class="sbtn prim" type="button" onclick="confirmarNuevoTipo()">✓</button>
+          <button class="sbtn" type="button" onclick="cancelarNuevoTipo()">✕</button>
+        </div>
+        <div class="frow">
+          <div class="fgrp">
+            <div class="flbl">Fecha *</div>
+            <input class="finp" id="cl-fecha" type="date">
+          </div>
+          <div class="fgrp">
+            <div class="flbl">Hora</div>
+            <div class="hora-row">
+              <select class="fsel" id="cl-hora-h" style="font-size:12px"></select>
+              <div class="hora-sep">:</div>
+              <select class="fsel" id="cl-hora-m" style="max-width:68px;font-size:12px"></select>
+            </div>
+          </div>
+        </div>
+        <div class="fgrp">
+          <div class="flbl">Duración</div>
+          <select class="fsel" id="cl-duracion">
+            <option value="60">60 min</option>
+            <option value="90">90 min</option>
+            <option value="120">120 min</option>
+          </select>
+        </div>
+        <div class="fgrp">
+          <div class="flbl">Observaciones</div>
+          <input class="finp" id="cl-notas" placeholder="Notas sobre la clase…">
+        </div>
+        <div class="wizard-btns">
+          <button class="wbtn" onclick="cerrarWizard()">✕ Cancelar</button>
+          <button class="wbtn prim" id="btn-f1-sig">Siguiente →</button>
+        </div>
+      </div>
+
+      <!-- FASE 2 -->
+      <div id="fase-2" style="display:none">
+        <div class="wizard-hdr">
+          <div class="wizard-titulo">Asistencia</div>
+          <div class="wizard-sub">Marca los alumnos que vinieron</div>
+        </div>
+        <div style="padding:0 15px">
+          <div class="check-todos">
+            <button class="btn-todos act" id="btn-todos" onclick="todosCheck(true)">✅ Todos</button>
+            <button class="btn-todos" id="btn-ninguno" onclick="todosCheck(false)">☐ Ninguno</button>
+          </div>
+          <div id="lista-asistencia"></div>
+        </div>
+        <div class="wizard-btns">
+          <button class="wbtn" onclick="irFase(1)">← Atrás</button>
+          <button class="wbtn prim" onclick="irFase(3)">Siguiente →</button>
+        </div>
+      </div>
+
+      <!-- FASE 3 -->
+      <div id="fase-3" style="display:none">
+        <div class="wizard-hdr">
+          <div class="wizard-titulo">Estructura</div>
+          <div class="wizard-sub">Ajusta las cantidades — se sugerirán los ejercicios menos usados</div>
+        </div>
+        <div style="padding:0 15px">
+          <div class="estr-box">
+            <div class="estr-lbl">Bloques por categoría:</div>
+            <div class="estr-row"><div class="estr-nom"><img src="icons/calentamiento.png">Calentamiento</div><div class="counter"><button onclick="adj('cal',-1)">−</button><span id="n-cal">1</span><button onclick="adj('cal',1)">+</button></div></div>
+            <div class="estr-row"><div class="estr-nom"><img src="icons/carritos.png">Carritos</div><div class="counter"><button onclick="adj('car',-1)">−</button><span id="n-car">3</span><button onclick="adj('car',1)">+</button></div></div>
+            <div class="estr-row"><div class="estr-nom"><img src="icons/situaciones.png">Situaciones</div><div class="counter"><button onclick="adj('sit',-1)">−</button><span id="n-sit">2</span><button onclick="adj('sit',1)">+</button></div></div>
+            <div class="estr-row"><div class="estr-nom"><img src="icons/partiditos.png">Partiditos</div><div class="counter"><button onclick="adj('par',-1)">−</button><span id="n-par">1</span><button onclick="adj('par',1)">+</button></div></div>
+          </div>
+        </div>
+        <div class="wizard-btns">
+          <button class="wbtn" onclick="irFase(2)">← Atrás</button>
+          <button class="wbtn prim" onclick="generarBloques()">Siguiente →</button>
+        </div>
+      </div>
+
+      <!-- FASE 4 -->
+      <div id="fase-4" style="display:none">
+        <div class="wizard-hdr">
+          <div class="wizard-titulo">Ejercicios</div>
+          <div class="wizard-sub">Revisa y ajusta los bloques</div>
+        </div>
+        <div id="bloques-container" style="padding:0 15px"></div>
+        <div class="add-bloques" style="padding:0 15px">
+          <button class="add-blq" onclick="addBloque('Calentamiento')"><img src="icons/calentamiento.png">+ Calent.</button>
+          <button class="add-blq" onclick="addBloque('Carritos')"><img src="icons/carritos.png">+ Carrito</button>
+          <button class="add-blq" onclick="addBloque('Situaciones')"><img src="icons/situaciones.png">+ Situac.</button>
+          <button class="add-blq" onclick="addBloque('Partiditos')"><img src="icons/partiditos.png">+ Partit.</button>
+        </div>
+        <div class="wizard-btns">
+          <button class="wbtn" onclick="irFase(3)">← Atrás</button>
+          <button class="wbtn verde" onclick="guardar()">💾 Guardar clase</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sheet notificar -->
+  <div class="overlay" id="sh-notif">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">📣 Notificar alumnos</div>
+      <div style="padding:0 15px">
+        <div class="flbl" style="margin-bottom:4px">Mensaje</div>
+        <textarea class="finp" id="notif-msg" rows="4" style="resize:none;line-height:1.5;margin-bottom:10px"></textarea>
+        <div class="flbl">📧 Emails</div>
+        <div id="notif-emails" style="font-size:11px;color:var(--sutil);font-weight:600;margin-bottom:8px;word-break:break-all"></div>
+        <div class="flbl">💬 WhatsApp</div>
+        <div id="notif-wa" style="font-size:11px;color:var(--sutil);font-weight:600;margin-bottom:12px"></div>
+        <div class="sheet-btns">
+          <button class="sbtn" onclick="enviarEmail()">📧 Email</button>
+          <button class="sbtn prim" onclick="enviarWA()">💬 WhatsApp</button>
+        </div>
+        <button class="sbtn" style="width:100%;margin-top:8px" onclick="closeSheet('sh-notif')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <div class="confirm-titulo">¿Eliminar clase?</div>
+      <div class="confirm-texto" id="confirm-texto"></div>
+      <div class="confirm-btns">
+        <button class="cbtn" onclick="document.getElementById('confirm-overlay').classList.remove('open')">Cancelar</button>
+        <button class="cbtn danger" id="confirm-ok">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script>
+let _clases=[],_grupos=[],_ejercicios={},_estadoSel='Programada',_bloques=[],_editId=null;
+let _cfgTiposClase=['Grupo','Particular','Clase-partido','Libre'];
+const ESTADO_COLOR={Programada:'#2563eb',Realizada:'#16a34a',Suspendida:'#e05a5a',Festivo:'#f59e0b'};
+const ESTADO_CHIP={Programada:'caz',Realizada:'cvd',Suspendida:'crd',Festivo:'cam'};
+const ICONO_CAT={Calentamiento:'icons/calentamiento.png',Carritos:'icons/carritos.png',Situaciones:'icons/situaciones.png',Partiditos:'icons/partiditos.png'};
+const CATS=['Calentamiento','Carritos','Situaciones','Partiditos'];
+const ESTADOS_SIMPLES=['Suspendida','Festivo'];
+
+function buildHoraPickers(){
+  const horas=Array.from({length:16},(_,i)=>String(i+7).padStart(2,'0'));
+  const mins=Array.from({length:12},(_,i)=>String(i*5).padStart(2,'0'));
+  document.getElementById('cl-hora-h').innerHTML=horas.map(h=>`<option value="${h}">${h}</option>`).join('');
+  document.getElementById('cl-hora-m').innerHTML=mins.map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+function fillTipoClaseSelect(val) {
+  const sel = document.getElementById('cl-tipo');
+  if (!sel) return;
+  const cur = val || sel.value;
+  sel.innerHTML = _cfgTiposClase.map(t=>`<option value="${t}">${t}</option>`).join('') +
+    '<option value="__nuevo__">+ Añadir tipo…</option>';
+  if (cur && cur !== '__nuevo__') sel.value = cur;
+}
+function onSelectNuevoTipo(sel) {
+  if (sel.value !== '__nuevo__') return;
+  sel.value = _cfgTiposClase[0] || 'Grupo';
+  document.getElementById('nuevo-tipo-wrap').style.display = 'flex';
+  document.getElementById('nuevo-tipo-inp').value = '';
+  document.getElementById('nuevo-tipo-inp').focus();
+}
+function confirmarNuevoTipo() {
+  const inp = document.getElementById('nuevo-tipo-inp');
+  const val = inp.value.trim();
+  if (!val) { inp.focus(); return; }
+  if (!_cfgTiposClase.includes(val)) {
+    _cfgTiposClase.push(val);
+    saveConfig('tipos_clase', _cfgTiposClase).catch(console.error);
+  }
+  fillTipoClaseSelect(val);
+  cancelarNuevoTipo();
+  toast('✓ "'+val+'" añadido', 'ok');
+}
+function cancelarNuevoTipo() {
+  document.getElementById('nuevo-tipo-wrap').style.display = 'none';
+}
+
+function getHora(){return document.getElementById('cl-hora-h').value+':'+document.getElementById('cl-hora-m').value}
+function setHora(s){if(!s)return;const[h,m]=s.split(':');document.getElementById('cl-hora-h').value=h?.padStart(2,'0')||'10';document.getElementById('cl-hora-m').value=(m?.slice(0,2)||'00').padStart(2,'0')}
+
+function filtrar(){
+  const fE=document.getElementById('filtro-estado').value;
+  const fG=document.getElementById('filtro-grupo').value;
+  const lista=_clases.filter(c=>(!fE||c.estado===fE)&&(!fG||c.grupo_id===fG));
+  renderLista(lista);
+}
+
+function renderLista(lista){
+  document.getElementById('contador').textContent=lista.length;
+  const el=document.getElementById('lista-clases');
+  if(!lista.length){showEmpty('lista-clases','Sin clases con ese filtro');return}
+  el.innerHTML=lista.map(c=>{
+    const g=_grupos.find(x=>x.id===c.grupo_id);
+    const color=ESTADO_COLOR[c.estado]||'#94a3b8';
+    const hora=c.hora?c.hora.slice(0,5):'';
+    const bloqs=c.clase_ejercicios||[];
+    const asist=(c.clase_asistencia||[]).filter(a=>a.asistio);
+    const dur=c.duracion?c.duracion+' min':'';
+    return `
+    <div class="card" id="card-${c.id}">
+      <div class="card-main" onclick="toggleCard('${c.id}')">
+        <div style="flex:1;min-width:0">
+          <div class="clase-fecha">${formatFecha(c.fecha)}${hora?' · '+hora:''}</div>
+          <div class="clase-meta">
+            <div class="clase-dot" style="background:${color}"></div>
+            <span class="clase-grupo">${g?.nombre||'Sin grupo'} · </span>
+            <span class="clase-estado" style="color:${color}">${c.estado}</span>
+          </div>
+          <div class="clase-resumen">${asist.length?asist.length+' asistentes · ':''}${bloqs.length?bloqs.length+' bloques · ':''}${dur}</div>
+        </div>
+        <div class="chev" id="chev-${c.id}">▼</div>
+      </div>
+      <div class="exp" id="exp-${c.id}">
+        ${renderEjs(bloqs)}
+        ${renderAsist(asist)}
+        ${c.notas?`<div class="dl">Notas</div><div class="dv">${c.notas}</div>`:''}
+        <div class="abtns">
+          <button class="abtn prim" onclick='abrirEditar(${JSON.stringify(c).replace(/'/g,"&#39;")})'>✏️ Editar</button>
+          <button class="abtn dang" onclick="confirmarEliminar('${c.id}')">🗑</button>
+        </div>
+      </div>
+    </div>`}).join('');
+}
+
+function renderEjs(bloqs){
+  if(!bloqs.length)return'';
+  return`<div class="ej-list">`+
+    bloqs.sort((a,b)=>a.orden-b.orden).map(b=>{
+      const ej=b.ejercicios||{};const cat=ej.categoria||'';
+      return`<div class="ej-item"><div class="ej-ico"><img src="${ICONO_CAT[cat]||'icons/ejercicios.png'}"></div><div style="flex:1;min-width:0"><div class="ej-nombre">${ej.nombre||'Ejercicio'}</div><div class="ej-sub">${cat}${b.duracion?' · '+b.duracion:''}</div></div>${!b.realizado?'<span class="ej-no-real">✗</span>':''}</div>`;
+    }).join('')+`</div>`;
+}
+
+function renderAsist(asist){
+  if(!asist.length)return'';
+  return`<div class="asist-wrap">`+asist.map(a=>`<span class="asist-chip">✓ ${a.alumnos?.nombre||'Alumno'}</span>`).join('')+`</div>`;
+}
+
+function abrirWizard(){
+  _editId=null;_bloques=[];_estadoSel='Programada';
+  document.getElementById('wizard-titulo').textContent='Nueva Clase';
+  document.getElementById('cl-id').value='';
+  document.getElementById('cl-fecha').value=new Date().toISOString().slice(0,10);
+  document.getElementById('cl-grupo').value='';
+  document.getElementById('cl-notas').value='';
+  document.getElementById('cl-duracion').value='60';
+  setHora('10:00');
+  fillTipoClaseSelect('Grupo');
+  document.querySelectorAll('.estado-btn').forEach(b=>b.className='estado-btn');
+  document.querySelectorAll('.estado-btn')[0].classList.add('sel-Programada');
+  document.getElementById('wizard-overlay').classList.add('open');
+  irFase(1);
+}
+
+function abrirEditar(c){
+  _editId=c.id;_bloques=[];_estadoSel=c.estado||'Programada';
+  document.getElementById('wizard-titulo').textContent='Editar Clase';
+  document.getElementById('cl-id').value=c.id;
+  document.getElementById('cl-fecha').value=c.fecha;
+  document.getElementById('cl-grupo').value=c.grupo_id||'';
+  fillTipoClaseSelect(c.tipo_clase||'Grupo');
+  document.getElementById('cl-notas').value=c.notas||'';
+  document.getElementById('cl-duracion').value=String(c.duracion||60);
+  setHora(c.hora||'10:00');
+  document.querySelectorAll('.estado-btn').forEach(b=>b.className='estado-btn');
+  const btn=[...document.querySelectorAll('.estado-btn')].find(b=>b.textContent.includes(c.estado));
+  if(btn)btn.classList.add('sel-'+c.estado);
+  if(!ESTADOS_SIMPLES.includes(c.estado)){
+    _bloques=(c.clase_ejercicios||[]).map(b=>({ejercicio_id:b.ejercicio_id,nombre:b.ejercicios?.nombre||'',categoria:b.ejercicios?.categoria||'',orden:b.orden,duracion:b.duracion||'15 min',realizado:b.realizado!==false}));
+  }
+  document.getElementById('wizard-overlay').classList.add('open');
+  irFase(1);
+}
+
+function cerrarWizard(){document.getElementById('wizard-overlay').classList.remove('open')}
+document.getElementById('wizard-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('wizard-overlay'))cerrarWizard()});
+
+function irFase(n){
+  for(let i=1;i<=4;i++)document.getElementById('fase-'+i).style.display='none';
+  document.getElementById('fase-'+n).style.display='block';
+  const esSimple=ESTADOS_SIMPLES.includes(_estadoSel);
+  const total=esSimple?1:4;
+  document.getElementById('wizard-steps').innerHTML=Array.from({length:total},(_,i)=>
+    `<div class="wstep ${i<n-1?'done':i===n-1?'active':''}"></div>`).join('');
+  const btnSig=document.getElementById('btn-f1-sig');
+  if(esSimple){
+    btnSig.textContent='💾 Guardar';btnSig.className='wbtn verde';
+    btnSig.onclick=guardar;
+  }else{
+    btnSig.textContent='Siguiente →';btnSig.className='wbtn prim';
+    btnSig.onclick=()=>{
+      cargarAsistencia();irFase(2);
+    };
+  }
+  if(n===2)cargarAsistencia();
+}
+
+function selEstado(btn,estado){
+  document.querySelectorAll('.estado-btn').forEach(b=>b.className='estado-btn');
+  btn.classList.add('sel-'+estado);_estadoSel=estado;irFase(1);
+}
+
+async function cargarAsistencia(){
+  const grupoId=document.getElementById('cl-grupo').value;
+  // Si no hay grupo (ej: clase particular), cargamos todos los alumnos
+  const todosAlumnos=await getAlumnos();
+  const alumnos=grupoId ? todosAlumnos.filter(a=>a.grupo_id===grupoId) : todosAlumnos;
+  let asistPrev={};
+  if(_editId){const c=_clases.find(x=>x.id===_editId);(c?.clase_asistencia||[]).forEach(a=>asistPrev[a.alumno_id]=a.asistio)}
+  document.getElementById('lista-asistencia').innerHTML=alumnos.map(a=>{
+    const ok=_editId?(asistPrev[a.id]!==false):true;
+    return`<div class="al-check ${ok?'checked':''}" data-id="${a.id}" onclick="toggleCheck(this)"><div class="check-box">${ok?'✓':''}</div><div style="flex:1;font-size:13px;font-weight:800;color:var(--texto)">${a.nombre}</div><div style="font-size:11px;color:var(--sutil);font-weight:600">${a.nivel||''}</div></div>`;
+  }).join('');
+}
+
+function toggleCheck(el){
+  const on=el.classList.toggle('checked');
+  el.querySelector('.check-box').textContent=on?'✓':'';
+}
+function todosCheck(val){
+  document.querySelectorAll('.al-check').forEach(el=>{el.classList.toggle('checked',val);el.querySelector('.check-box').textContent=val?'✓':''});
+  document.getElementById('btn-todos').classList.toggle('act',val);
+  document.getElementById('btn-ninguno').classList.toggle('act',!val);
+}
+
+// setModo removed
+
+function adj(id,delta){const el=document.getElementById('n-'+id);el.textContent=Math.max(0,parseInt(el.textContent)+delta)}
+
+function generarSugerencia(){
+  const map={cal:'ical',car:'icar',sit:'isit',par:'ipar'};
+  Object.entries(map).forEach(([k,ik])=>{
+    const cat=CATS[['cal','car','sit','par'].indexOf(k)];
+    const ejs=_ejercicios[cat]||[];
+    const n=Math.max(1,ejs.filter(e=>(e.usos||0)<3).length>0?Math.ceil(Math.random()*3):1);
+    const el=document.getElementById('n-'+ik);if(el)el.textContent=n;
+  });
+}
+
+function generarBloques(){
+  try {
+    const nCal = parseInt(document.getElementById('n-cal').textContent)||0;
+    const nCar = parseInt(document.getElementById('n-car').textContent)||0;
+    const nSit = parseInt(document.getElementById('n-sit').textContent)||0;
+    const nPar = parseInt(document.getElementById('n-par').textContent)||0;
+    const counts={Calentamiento:nCal,Carritos:nCar,Situaciones:nSit,Partiditos:nPar};
+    _bloques=[];let orden=0;
+    Object.entries(counts).forEach(([cat,n])=>{
+      const ejs=[...(_ejercicios[cat]||[])].sort((a,b)=>(a.usos||0)-(b.usos||0));
+      for(let i=0;i<n;i++){
+        const ej=ejs[i%(ejs.length||1)];
+        _bloques.push({ejercicio_id:ej?.id||null,nombre:ej?.nombre||'Sin ejercicio',categoria:cat,orden:orden++,duracion:'15 min',realizado:true});
+      }
+    });
+    renderBloquesForm();
+    irFase(4);
+  } catch(e) { toast('Error generando bloques: '+e.message,'err'); console.error(e); }
+}
+
+
+
+function renderBloquesForm(){
+  const cont=document.getElementById('bloques-container');cont.innerHTML='';
+  _bloques.forEach((b,i)=>cont.appendChild(crearBloqueEl(b,i)));
+}
+
+function crearBloqueEl(b,idx){
+  const div=document.createElement('div');div.className='bloque-form';div.dataset.idx=idx;
+  const ejsCat=_ejercicios[b.categoria]||[];
+  const opts=ejsCat.map(e=>`<option value="${e.id}" ${e.id===b.ejercicio_id?'selected':''}>${e.nombre}</option>`).join('');
+  div.innerHTML=`
+    <div class="bloque-form-hdr">
+      <div class="bloque-form-cat"><img src="${ICONO_CAT[b.categoria]||'icons/ejercicios.png'}">${b.categoria}</div>
+      <div class="bloque-ord-btns">
+        <button class="btn-ord" onclick="moverBloque(${idx},-1)">↑</button>
+        <button class="btn-ord" onclick="moverBloque(${idx},1)">↓</button>
+        <button class="btn-del" onclick="eliminarBloque(${idx})">✕</button>
+      </div>
+    </div>
+    <select class="bloque-ej-sel" onchange="_bloques[${idx}].ejercicio_id=this.value;_bloques[${idx}].nombre=this.options[this.selectedIndex].text">
+      <option value="">Selecciona ejercicio…</option>${opts}
+    </select>
+    <div class="bloque-row">
+      <select class="bloque-dur" onchange="_bloques[${idx}].duracion=this.value">
+        ${['5 min','10 min','15 min','20 min','25 min','30 min','45 min'].map(d=>`<option ${d===b.duracion?'selected':''}>${d}</option>`).join('')}
+      </select>
+      <label class="no-real-lbl"><input type="checkbox" ${!b.realizado?'checked':''} onchange="_bloques[${idx}].realizado=!this.checked"> No realizado</label>
+    </div>`;
+  return div;
+}
+
+function moverBloque(idx,dir){
+  const ni=idx+dir;if(ni<0||ni>=_bloques.length)return;
+  [_bloques[idx],_bloques[ni]]=[_bloques[ni],_bloques[idx]];
+  _bloques.forEach((b,i)=>b.orden=i);renderBloquesForm();
+}
+function eliminarBloque(idx){_bloques.splice(idx,1);_bloques.forEach((b,i)=>b.orden=i);renderBloquesForm()}
+function addBloque(cat){
+  const ejs=_ejercicios[cat]||[];
+  _bloques.push({ejercicio_id:ejs[0]?.id||null,nombre:ejs[0]?.nombre||'',categoria:cat,orden:_bloques.length,duracion:'15 min',realizado:true});
+  renderBloquesForm();
+  document.getElementById('bloques-container').lastElementChild?.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function guardar(){
+  const grupoId=document.getElementById('cl-grupo').value||null;
+  const fecha=document.getElementById('cl-fecha').value;
+  if(!fecha){toast('Selecciona una fecha','warn');return}
+  const tipoClase=document.getElementById('cl-tipo')?.value||'Grupo';
+  const clase={id:document.getElementById('cl-id').value||undefined,grupo_id:grupoId,fecha,hora:getHora(),estado:_estadoSel,tipo_clase:tipoClase,duracion:parseInt(document.getElementById('cl-duracion').value),notas:document.getElementById('cl-notas').value.trim()||null};
+  try{
+    const saved=await saveClase(clase);const claseId=saved.id;
+    if(!ESTADOS_SIMPLES.includes(_estadoSel)){
+      await _sb.from('clase_asistencia').delete().eq('clase_id',claseId);
+      const checks=[...document.querySelectorAll('#lista-asistencia .al-check')];
+      if(checks.length){await _sb.from('clase_asistencia').insert(checks.map(el=>({clase_id:claseId,alumno_id:el.dataset.id,asistio:el.classList.contains('checked')})))}
+      await _sb.from('clase_ejercicios').delete().eq('clase_id',claseId);
+      const rows=_bloques.filter(b=>b.ejercicio_id).map(b=>({clase_id:claseId,ejercicio_id:b.ejercicio_id,orden:b.orden,duracion:b.duracion,realizado:b.realizado}));
+      if(rows.length){
+        await _sb.from('clase_ejercicios').insert(rows);
+        for(const b of _bloques.filter(b=>b.ejercicio_id&&b.realizado)){
+          const{data:ej}=await _sb.from('ejercicios').select('usos').eq('id',b.ejercicio_id).single();
+          if(ej)await _sb.from('ejercicios').update({usos:(ej.usos||0)+1}).eq('id',b.ejercicio_id);
+        }
+      }
+    }
+    cerrarWizard();toast('Clase guardada ✓','ok');await cargar();
+  }catch(e){toast('Error: '+(e.message||JSON.stringify(e)),'err');console.error(e)}
+}
+
+function confirmarEliminar(id){
+  document.getElementById('confirm-texto').textContent='¿Eliminar esta clase y sus datos?';
+  document.getElementById('confirm-overlay').classList.add('open');
+  document.getElementById('confirm-ok').onclick=async()=>{
+    document.getElementById('confirm-overlay').classList.remove('open');
+    try{await deleteClase(id);toast('Eliminada','ok');await cargar()}catch(e){toast('Error','err')}
+  };
+}
+
+async function notificar(claseId) {
+  const clase = _clases.find(c => c.id === claseId);
+  if (!clase) return;
+  const grupo = _grupos.find(g => g.id === clase.grupo_id);
+  const alumnos = clase.grupo_id ? (await getAlumnos()).filter(a => a.grupo_id === clase.grupo_id) : [];
+  const fecha = formatFecha(clase.fecha);
+  const motivo = clase.notas ? ` Motivo: ${clase.notas}` : '';
+  const msg = encodeURIComponent(`Hola! La clase del ${fecha} ha sido ${clase.estado.toLowerCase()}.${motivo} Disculpa las molestias.`);
+
+  // Emails
+  const emails = alumnos.filter(a => a.email).map(a => a.email);
+  // Teléfonos WhatsApp (solo primero — wa.me no soporta múltiples)
+  const telefonos = alumnos.filter(a => a.telefono).map(a => a.telefono.replace(/\s/g,''));
+
+  if (!emails.length && !telefonos.length) {
+    toast('Sin emails ni teléfonos en el grupo','warn'); return;
+  }
+
+  // Mostrar opciones
+  const opciones = [];
+  if (emails.length) opciones.push(`📧 Email (${emails.length} alumnos)`);
+  if (telefonos.length) opciones.push(`💬 WhatsApp (${telefonos.length} alumnos)`);
+
+  // Abrir sheet de notificación
+  _notifClase = { emails, telefonos, msg };
+  document.getElementById('notif-emails').textContent = emails.length ? emails.join(', ') : '—';
+  document.getElementById('notif-wa').textContent = telefonos.length ? telefonos.join(', ') : '—';
+  document.getElementById('notif-msg').value = decodeURIComponent(msg);
+  openSheet('sh-notif');
+}
+
+let _notifClase = {};
+
+function enviarEmail() {
+  if (!_notifClase.emails?.length) { toast('Sin emails','warn'); return; }
+  const asunto = encodeURIComponent('Clase cancelada / festivo');
+  const cuerpo = encodeURIComponent(document.getElementById('notif-msg').value);
+  window.open(`mailto:${_notifClase.emails.join(',')}?subject=${asunto}&body=${cuerpo}`);
+}
+function enviarWA() {
+  if (!_notifClase.telefonos?.length) { toast('Sin teléfonos','warn'); return; }
+  const msg = encodeURIComponent(document.getElementById('notif-msg').value);
+  // Abre WhatsApp para el primer teléfono (limitación de wa.me)
+  window.open(`https://wa.me/${_notifClase.telefonos[0]}?text=${msg}`);
+  if (_notifClase.telefonos.length > 1) toast(`Repite para los ${_notifClase.telefonos.length-1} teléfonos restantes`,'warn');
+}
+
+async function cargar(){
+  showLoading('lista-clases');
+  const{data,error}=await _sb.from('clases').select('*, clase_ejercicios(*, ejercicios(nombre,categoria)), clase_asistencia(*, alumnos(nombre))').eq('escuela_id',Store.escuelaId).order('fecha',{ascending:false});
+  if(error){showError('lista-clases','Error al cargar');return}
+  _clases=data||[];filtrar();
+}
+
+async function cargarEjercicios(){
+  const todos=await getEjercicios();
+  _ejercicios={};CATS.forEach(c=>_ejercicios[c]=[]);
+  todos.forEach(e=>{if(_ejercicios[e.categoria])_ejercicios[e.categoria].push(e)});
+}
+
+async function init(){
+  buildHoraPickers();
+  renderNav('clases');
+  await initStore();
+  renderHeader({titulo:'Escuela de Pádel',subtitulo:'Clases',icono:'icons/clases.png',botonDerecho:null});
+  const cfgClase = await getConfigMultiple(['tipos_clase']);
+  if (cfgClase.tipos_clase && cfgClase.tipos_clase.length) _cfgTiposClase = cfgClase.tipos_clase;
+  fillTipoClaseSelect('Grupo');
+  _grupos=await getGrupos();
+  const sg=document.getElementById('cl-grupo'),sf=document.getElementById('filtro-grupo');
+  _grupos.forEach(g=>{sg.innerHTML+=`<option value="${g.id}">${g.nombre}</option>`;sf.innerHTML+=`<option value="${g.id}">${g.nombre}</option>`});
+  await Promise.all([cargar(),cargarEjercicios()]);
+}
+init();
+</script>
+</body>
+</html>

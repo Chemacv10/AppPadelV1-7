@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Alumnos — Escuela de Pádel</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ── Avatar foto ── */
+    .av-foto { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--borde); }
+    .av-foto-lg { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--borde); display: block; margin: 0 auto 6px; }
+
+    /* ── Foto upload botones ── */
+    .foto-preview-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; }
+    .foto-btns { display: flex; gap: 8px; width: 100%; }
+    .foto-btn  { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer; border: 1.5px solid var(--borde); background: #f8fafc; color: var(--texto); font-family: inherit; }
+    .foto-btn:active { background: #e2e8f0; }
+    #foto-file-input { display: none; }
+
+    /* ── Nuevo inline ── */
+    .nuevo-inline { display: flex; gap: 6px; align-items: center; margin: -4px 0 8px; animation: fadeIn .15s ease; }
+    .nuevo-inline .finp { flex: 1; }
+    .nuevo-inline .sbtn { padding: 9px 12px; min-width: 0; flex-shrink: 0; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── Detalle alumno expandido ── */
+    .det-foto { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--borde); }
+    .alumno-header-exp { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .alumno-header-info { flex: 1; }
+    .alumno-header-nombre { font-size: 15px; font-weight: 900; color: var(--texto); }
+    .alumno-header-sub { font-size: 11px; color: var(--sutil); font-weight: 600; margin-top: 2px; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div id="header-container"></div>
+  <nav id="nav-container"></nav>
+
+  <main class="content">
+    <!-- Buscador -->
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="buscador" placeholder="Buscar alumno…" oninput="filtrar()">
+    </div>
+
+    <!-- Filtros desplegables -->
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1">
+        <div class="filter-label">Nivel</div>
+        <select class="fsel" id="filtro-nivel" onchange="filtrar()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <div class="filter-label">Grupo</div>
+        <select class="fsel" id="filtro-grupo" onchange="filtrar()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sec">
+      <img src="icons/alumnos.png">
+      <div class="sec-title">Alumnos</div>
+      <div class="sec-count" id="contador">—</div>
+    </div>
+
+    <div id="lista-alumnos"><div class="loading"><div class="spinner"></div></div></div>
+  </main>
+
+  <button class="fab" onclick="abrirNuevo()">+</button>
+
+  <!-- ── Sheet alumno ── -->
+  <div class="overlay" id="sh-alumno">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="sh-titulo">Nuevo alumno</div>
+      <input type="hidden" id="al-id">
+      <input type="hidden" id="al-foto-actual">
+
+      <!-- Nombre -->
+      <div class="fgrp">
+        <div class="flbl">Nombre completo *</div>
+        <input class="finp" id="al-nombre" placeholder="Ej: María García">
+      </div>
+
+      <!-- Nivel -->
+      <div class="fgrp">
+        <div class="flbl">Nivel *</div>
+        <select class="fsel" id="al-nivel" onchange="onSelectNuevoNivel(this)"></select>
+      </div>
+      <div class="nuevo-inline" id="nuevo-nivel-wrap" style="display:none">
+        <input class="finp" id="nuevo-nivel-inp" placeholder="Ej: Competición"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarNuevoNivel();}">
+        <button class="sbtn prim" type="button" onclick="confirmarNuevoNivel()">✓</button>
+        <button class="sbtn" type="button" onclick="cancelarNuevoNivel()">✕</button>
+      </div>
+
+      <!-- Grupo -->
+      <div class="fgrp">
+        <div class="flbl">Grupo</div>
+        <select class="fsel" id="al-grupo"><option value="">Sin grupo</option></select>
+      </div>
+
+      <!-- Teléfono y email -->
+      <div class="frow">
+        <div class="fgrp">
+          <div class="flbl">Teléfono</div>
+          <input class="finp" id="al-telefono" placeholder="6xx xxx xxx" type="tel">
+        </div>
+        <div class="fgrp">
+          <div class="flbl">Email</div>
+          <input class="finp" id="al-email" placeholder="email@ejemplo.com" type="email">
+        </div>
+      </div>
+
+      <!-- Fecha nacimiento -->
+      <div class="fgrp">
+        <div class="flbl">Fecha de nacimiento</div>
+        <input class="finp" id="al-fnac" type="date">
+      </div>
+
+      <!-- Foto de perfil -->
+      <div class="fgrp">
+        <div class="flbl">Foto de perfil <span style="font-weight:600;text-transform:none;font-size:10px">(opcional)</span></div>
+        <div class="foto-preview-wrap">
+          <div id="foto-preview-wrap" style="margin-bottom:8px;display:none">
+            <img id="foto-preview" class="av-foto-lg" src="" alt="Preview">
+          </div>
+          <div class="foto-btns">
+            <button class="foto-btn" type="button" onclick="document.getElementById('foto-file-input').click()">📷 Cámara / Galería</button>
+          </div>
+          <input type="file" id="foto-file-input" accept="image/*" onchange="onFotoChange(event)" style="display:none">
+          <div style="text-align:center;font-size:11px;color:var(--sutil);font-weight:600;margin:6px 0">— o —</div>
+          <input class="finp" id="al-foto-url" type="url" placeholder="Pega una URL de imagen…" oninput="onFotoUrl(this.value)" style="font-size:12px">
+        </div>
+      </div>
+
+      <div class="sheet-btns">
+        <button class="sbtn" onclick="closeSheet('sh-alumno')">Cancelar</button>
+        <button class="sbtn prim" onclick="guardar()">✓ Guardar alumno</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmación -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <div class="confirm-titulo">¿Eliminar alumno?</div>
+      <div class="confirm-texto" id="confirm-texto">Esta acción no se puede deshacer.</div>
+      <div class="confirm-btns">
+        <button class="cbtn" onclick="document.getElementById('confirm-overlay').classList.remove('open')">Cancelar</button>
+        <button class="cbtn danger" id="confirm-ok">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script>
+
+let _alumnos     = [];
+let _grupos      = [];
+let _filtroNivel = '';
+let _cfgNiveles  = ['Principiante', 'Intermedio', 'Avanzado'];
+let _fotoFile    = null;   // File pendiente de subir
+
+// ── Filtros ────────────────────────────────────
+function filtrar() {
+  const q          = (document.getElementById('buscador').value || '').toLowerCase().trim();
+  const filtNivel  = document.getElementById('filtro-nivel')?.value  || '';
+  const filtGrupo  = document.getElementById('filtro-grupo')?.value  || '';
+
+  const lista = _alumnos
+    .filter(a => {
+      if (filtNivel && a.nivel    !== filtNivel) return false;
+      if (filtGrupo === '__sin_grupo__') { if (a.grupo_id) return false; }
+      else if (filtGrupo && a.grupo_id !== filtGrupo) return false;
+      if (!q) return true;
+      const grupo = _grupos.find(g => g.id === a.grupo_id);
+      const hay = [a.nombre, a.nivel, a.telefono, a.email, grupo?.nombre].filter(Boolean).join(' ').toLowerCase();
+      return q.split(' ').every(p => hay.includes(p));
+    })
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  renderLista(lista);
+}
+
+// ── Render ─────────────────────────────────────
+function renderLista(alumnos) {
+  document.getElementById('contador').textContent = alumnos.length;
+  const el = document.getElementById('lista-alumnos');
+  if (!alumnos.length) { showEmpty('lista-alumnos', 'Sin alumnos con ese filtro'); return; }
+
+  el.innerHTML = alumnos.map(a => {
+    const grupo = _grupos.find(g => g.id === a.grupo_id);
+    const avatarEl = a.foto_url
+      ? `<img class="av-foto" src="${a.foto_url}" alt="${a.nombre}" onerror="this.style.display='none'">`
+      : avatarHTML(a.nombre);
+    const edad = a.fecha_nacimiento ? calcEdad(a.fecha_nacimiento) : null;
+
+    return `
+    <div class="card" id="card-${a.id}">
+      <div class="card-main" onclick="toggleCard('${a.id}')">
+        ${avatarEl}
+        <div class="ci">
+          <div class="cn">${a.nombre}</div>
+          <div class="cm">
+            ${chipNivel(a.nivel)}
+            <span class="chip cgr">${grupo ? grupo.nombre : 'Sin grupo'}</span>
+            ${edad  ? `<span class="chip cgr">${edad} años</span>` : ''}
+          </div>
+        </div>
+        <div class="chev" id="chev-${a.id}">▼</div>
+      </div>
+      <div class="exp" id="exp-${a.id}">
+        <div class="dl">Teléfono</div><div class="dv">${a.telefono || '—'}</div>
+        <div class="dl">Email</div><div class="dv">${a.email || '—'}</div>
+        <div class="dl">Nacimiento</div><div class="dv">${a.fecha_nacimiento ? formatFechaNac(a.fecha_nacimiento)+(edad?' ('+edad+' años)':''): '—'}</div>
+        <div class="dl">Grupo</div><div class="dv">${grupo ? grupo.nombre : 'Sin grupo'}</div>
+        <div class="abtns">
+          <button class="abtn" onclick="window.location.href='cobros.html?alumno_id=${a.id}'">💰 Cobros</button>
+          <button class="abtn prim" onclick="abrirEditarId('${a.id}')">✏️ Editar</button>
+          <button class="abtn dang" onclick="confirmarEliminar('${a.id}','${a.nombre.replace(/'/g,"\\'")}')">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Fechas ─────────────────────────────────────
+function calcEdad(fechaNac) {
+  const hoy  = new Date();
+  const nac  = new Date(fechaNac);
+  let edad   = hoy.getFullYear() - nac.getFullYear();
+  const m    = hoy.getMonth() - nac.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+  return edad;
+}
+function formatFechaNac(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ── Nivel dinámico ─────────────────────────────
+function fillNivelSelect(valorActual) {
+  const sel = document.getElementById('al-nivel');
+  sel.innerHTML =
+    _cfgNiveles.map(n => `<option value="${n}">${n}</option>`).join('') +
+    `<option value="__nuevo__">+ Añadir nivel…</option>`;
+  if (valorActual) sel.value = valorActual;
+}
+
+function onSelectNuevoNivel(sel) {
+  if (sel.value !== '__nuevo__') return;
+  sel.value = _cfgNiveles[0] || '';
+  document.getElementById('nuevo-nivel-wrap').style.display = 'flex';
+  document.getElementById('nuevo-nivel-inp').value = '';
+  document.getElementById('nuevo-nivel-inp').focus();
+}
+
+function confirmarNuevoNivel() {
+  const inp = document.getElementById('nuevo-nivel-inp');
+  const val = inp.value.trim();
+  if (!val) { inp.focus(); return; }
+  if (!_cfgNiveles.includes(val)) {
+    _cfgNiveles.push(val);
+    saveConfig('niveles', _cfgNiveles).catch(console.error);
+    actualizarFiltrosNivel();
+  }
+  fillNivelSelect(val);
+  cancelarNuevoNivel();
+  toast('✓ Nivel "' + val + '" añadido', 'ok');
+}
+
+function cancelarNuevoNivel() {
+  document.getElementById('nuevo-nivel-wrap').style.display = 'none';
+}
+
+function actualizarFiltrosNivel() {
+  const sel = document.getElementById('filtro-nivel');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>' +
+    _cfgNiveles.map(n => `<option value="${n}">${n}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+// ── Foto ───────────────────────────────────────
+function onFotoChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  _fotoFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => mostrarFotoPreview(ev.target.result);
+  reader.readAsDataURL(file);
+  document.getElementById('al-foto-url').value = '';
+}
+
+function onFotoUrl(url) {
+  if (url) { mostrarFotoPreview(url); _fotoFile = null; }
+  else { ocultarFotoPreview(); }
+}
+
+function mostrarFotoPreview(src) {
+  document.getElementById('foto-preview').src = src;
+  document.getElementById('foto-preview-wrap').style.display = 'block';
+}
+function ocultarFotoPreview() {
+  document.getElementById('foto-preview-wrap').style.display = 'none';
+  document.getElementById('foto-preview').src = '';
+}
+
+async function subirFoto(alumnoId) {
+  if (!_fotoFile) return null;
+  const ext  = _fotoFile.name.split('.').pop();
+  const path = `${Store.escuelaId}/${alumnoId}.${ext}`;
+  const { error } = await _sb.storage.from('fotos-alumnos').upload(path, _fotoFile, { upsert: true });
+  if (error) throw error;
+  const { data } = _sb.storage.from('fotos-alumnos').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// ── CRUD ───────────────────────────────────────
+function abrirNuevo() {
+  document.getElementById('sh-titulo').textContent = 'Nuevo alumno';
+  document.getElementById('al-id').value       = '';
+  document.getElementById('al-nombre').value   = '';
+  document.getElementById('al-telefono').value = '';
+  document.getElementById('al-email').value    = '';
+  document.getElementById('al-fnac').value     = '';
+  document.getElementById('al-foto-url').value = '';
+  document.getElementById('al-foto-actual').value = '';
+  document.getElementById('al-grupo').value    = '';
+  _fotoFile = null;
+  ocultarFotoPreview();
+  fillNivelSelect('Principiante');
+  openSheet('sh-alumno');
+}
+
+function abrirEditarId(id) {
+  const a = _alumnos.find(x => x.id === id);
+  if (a) abrirEditar(a);
+}
+
+function abrirEditar(a) {
+  document.getElementById('sh-titulo').textContent    = 'Editar alumno';
+  document.getElementById('al-id').value              = a.id;
+  document.getElementById('al-nombre').value          = a.nombre;
+  document.getElementById('al-telefono').value        = a.telefono || '';
+  document.getElementById('al-email').value           = a.email    || '';
+  document.getElementById('al-fnac').value            = a.fecha_nacimiento || '';
+  document.getElementById('al-foto-url').value        = a.foto_url || '';
+  document.getElementById('al-foto-actual').value     = a.foto_url || '';
+  document.getElementById('al-grupo').value           = a.grupo_id || '';
+  _fotoFile = null;
+  if (a.foto_url) mostrarFotoPreview(a.foto_url);
+  else ocultarFotoPreview();
+  fillNivelSelect(a.nivel || 'Principiante');
+  openSheet('sh-alumno');
+}
+
+async function guardar() {
+  const nombre = document.getElementById('al-nombre').value.trim();
+  if (!nombre) { toast('Escribe el nombre', 'warn'); return; }
+
+  const nivel = document.getElementById('al-nivel').value;
+  if (!nivel || nivel === '__nuevo__') { toast('Selecciona un nivel', 'warn'); return; }
+
+  const idVal          = document.getElementById('al-id').value;
+  const telefonoVal    = document.getElementById('al-telefono').value.trim();
+  const emailVal       = document.getElementById('al-email').value.trim();
+  const fnacVal        = document.getElementById('al-fnac').value;
+  const grupoVal       = document.getElementById('al-grupo').value;
+  const urlManual      = document.getElementById('al-foto-url').value.trim();
+  const fotoActual     = document.getElementById('al-foto-actual').value;
+
+  const alumno = {
+    nombre,
+    nivel,
+    telefono:         telefonoVal  || null,
+    email:            emailVal     || null,
+    fecha_nacimiento: fnacVal      || null,
+    grupo_id:         grupoVal     || null,
+    foto_url:         urlManual    || fotoActual || null,
+  };
+  if (idVal) alumno.id = idVal;
+
+  try {
+    const saved = await saveAlumno(alumno);
+
+    // Subir foto si hay archivo seleccionado
+    if (_fotoFile && saved && saved.id) {
+      try {
+        const fotoUrl = await subirFoto(saved.id);
+        if (fotoUrl) {
+          await saveAlumno({ id: saved.id, foto_url: fotoUrl });
+        }
+      } catch(fotoErr) {
+        console.warn('Error subiendo foto, alumno guardado sin foto:', fotoErr);
+      }
+    }
+
+    closeSheet('sh-alumno');
+    toast('Alumno guardado', 'ok');
+    await cargar();
+  } catch(e) {
+    console.error('Error guardar alumno:', e);
+    toast('Error: ' + (e.message || JSON.stringify(e)), 'err');
+  }
+}
+
+function confirmarEliminar(id, nombre) {
+  document.getElementById('confirm-texto').textContent = `¿Eliminar a ${nombre}? Esta acción no se puede deshacer.`;
+  document.getElementById('confirm-overlay').classList.add('open');
+  document.getElementById('confirm-ok').onclick = async () => {
+    document.getElementById('confirm-overlay').classList.remove('open');
+    try { await deleteAlumno(id); toast('Alumno eliminado', 'ok'); await cargar(); }
+    catch(e) { toast('Error al eliminar', 'err'); }
+  };
+}
+
+// ── Carga ──────────────────────────────────────
+async function cargar() {
+  showLoading('lista-alumnos');
+  _alumnos = await getAlumnos();
+  filtrar();
+}
+
+async function cargarGrupos() {
+  _grupos = await getGrupos();
+  const sel = document.getElementById('al-grupo');
+  sel.innerHTML = '<option value="">Sin grupo</option>' +
+    _grupos.map(g => `<option value="${g.id}">${g.nombre}</option>`).join('');
+  // Rellenar filtro grupo
+  const fsel = document.getElementById('filtro-grupo');
+  if (fsel) {
+    fsel.innerHTML = '<option value="">Todos</option>' +
+      '<option value="__sin_grupo__">Sin grupo</option>' +
+      _grupos.map(g => `<option value="${g.id}">${g.nombre}</option>`).join('');
+  }
+}
+
+// ── Init ───────────────────────────────────────
+async function init() {
+  renderHeader({ titulo:'Escuela de Pádel', subtitulo:'Alumnos', icono:'icons/alumnos.png', botonDerecho:null });
+  renderNav('alumnos');
+  await initStore();
+
+  // Cargar niveles desde Supabase (compartidos con grupos)
+  const cfg = await getConfigMultiple(['niveles']);
+  if (cfg.niveles && cfg.niveles.length) _cfgNiveles = cfg.niveles;
+  actualizarFiltrosNivel();
+
+  await Promise.all([cargarGrupos(), cargar()]);
+}
+
+init();
+</script>
+</body>
+</html>

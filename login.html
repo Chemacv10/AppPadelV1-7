@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Escuela de Pádel — Acceder</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <img src="icons/inicio.png" alt="Logo">
+    </div>
+    <div class="login-title">Escuela de Pádel</div>
+    <div class="login-sub">Gestión para monitores</div>
+
+    <div class="login-tabs">
+      <div class="ltab active" id="tab-entrar"      onclick="switchTab('entrar')">Entrar</div>
+      <div class="ltab"        id="tab-registrarse"  onclick="switchTab('registrarse')">Registrarse</div>
+    </div>
+
+    <!-- Entrar -->
+    <div id="form-entrar">
+      <div class="fgrp">
+        <div class="flbl">Email</div>
+        <input class="finp" type="email" id="login-email" placeholder="tu@email.com" autocomplete="email">
+      </div>
+      <div class="fgrp">
+        <div class="flbl">Contraseña</div>
+        <input class="finp" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div id="login-error" style="color:#e05a5a;font-size:12px;font-weight:700;margin-bottom:8px;display:none"></div>
+      <button class="btn-login" id="btn-entrar" onclick="doLogin()">Entrar →</button>
+    </div>
+
+    <!-- Registrarse -->
+    <div id="form-registrarse" style="display:none">
+      <div class="fgrp">
+        <div class="flbl">Nombre de tu escuela</div>
+        <input class="finp" type="text" id="reg-escuela" placeholder="Ej: Club Pádel Sevilla">
+      </div>
+      <div class="fgrp">
+        <div class="flbl">Email</div>
+        <input class="finp" type="email" id="reg-email" placeholder="tu@email.com" autocomplete="email">
+      </div>
+      <div class="fgrp">
+        <div class="flbl">Contraseña</div>
+        <input class="finp" type="password" id="reg-pass" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+      </div>
+      <div id="reg-error" style="color:#e05a5a;font-size:12px;font-weight:700;margin-bottom:8px;display:none"></div>
+      <button class="btn-login" id="btn-registrarse" onclick="doRegistro()">Crear cuenta →</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/store.js"></script>
+<script>
+
+function switchTab(tab) {
+  document.getElementById('tab-entrar').classList.toggle('active', tab === 'entrar');
+  document.getElementById('tab-registrarse').classList.toggle('active', tab === 'registrarse');
+  document.getElementById('form-entrar').style.display      = tab === 'entrar'      ? 'block' : 'none';
+  document.getElementById('form-registrarse').style.display = tab === 'registrarse' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const btn   = document.getElementById('btn-entrar');
+  const errEl = document.getElementById('login-error');
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+
+  errEl.style.display = 'none';
+  btn.textContent = 'Entrando...';
+  btn.disabled = true;
+
+  try {
+    await login(email, pass);
+    window.location.href = 'index.html';
+  } catch (err) {
+    errEl.textContent = 'Email o contraseña incorrectos';
+    errEl.style.display = 'block';
+    btn.textContent = 'Entrar →';
+    btn.disabled = false;
+  }
+}
+
+async function doRegistro() {
+  const btn      = document.getElementById('btn-registrarse');
+  const errEl    = document.getElementById('reg-error');
+  const escuela  = document.getElementById('reg-escuela').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const pass     = document.getElementById('reg-pass').value;
+
+  errEl.style.display = 'none';
+  if (!escuela) { errEl.textContent = 'Escribe el nombre de tu escuela'; errEl.style.display='block'; return; }
+  if (pass.length < 8) { errEl.textContent = 'La contraseña debe tener al menos 8 caracteres'; errEl.style.display='block'; return; }
+
+  btn.textContent = 'Creando cuenta...';
+  btn.disabled = true;
+
+  try {
+    const { data, error } = await _sb.auth.signUp({ email, password: pass });
+    if (error) throw error;
+
+    // Crear fila en escuelas
+    await _sb.from('escuelas').insert({
+      usuario_id: data.user.id,
+      nombre: escuela,
+    });
+
+    window.location.href = 'index.html';
+  } catch (err) {
+    errEl.textContent = err.message || 'Error al crear la cuenta';
+    errEl.style.display = 'block';
+    btn.textContent = 'Crear cuenta →';
+    btn.disabled = false;
+  }
+}
+
+// Enter key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('form-entrar').style.display !== 'none') doLogin();
+    else doRegistro();
+  }
+});
+
+// Si ya hay sesión activa, ir directo al inicio
+(async () => {
+  const { data: { user } } = await _sb.auth.getUser();
+  if (user) window.location.href = 'index.html';
+})();
+</script>
+</body>
+</html>

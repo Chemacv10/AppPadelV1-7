@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Cobros — Escuela de Pádel</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .cobros-header-info{background:var(--card);padding:10px 14px 12px;border-bottom:1px solid var(--borde)}
+    .alumno-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .resumen-row{display:flex;gap:6px}
+    .res-kpi{flex:1;border-radius:10px;padding:8px 6px;text-align:center}
+    .res-kpi .val{font-size:16px;font-weight:900;line-height:1}
+    .res-kpi .lbl{font-size:8.5px;font-weight:800;text-transform:uppercase;color:var(--sutil);margin-top:2px}
+    .res-kpi.verde{background:#f0fdf4}.res-kpi.verde .val{color:var(--verde)}
+    .res-kpi.rojo{background:#fff1f2}.res-kpi.rojo .val{color:var(--rojo)}
+    .res-kpi.azul{background:#eff6ff}.res-kpi.azul .val{color:var(--azul)}
+    .anio-nav{display:flex;align-items:center;justify-content:center;padding:8px 0}
+    .anio-sel{appearance:none;background:#f1f5f9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 11px center;border:1.5px solid var(--borde);border-radius:10px;padding:8px 30px 8px 14px;font-size:15px;font-weight:900;color:var(--texto);outline:none;cursor:pointer;font-family:Nunito,sans-serif;min-width:110px;text-align:center}
+    .anio-sel:focus{border-color:var(--azul)}
+    .mes-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;padding:8px 11px}
+    .mes-btn{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:8px;font-weight:800;text-transform:uppercase;cursor:pointer;border:2px solid transparent;gap:1px;transition:all .15s}
+    .mes-btn.pagado{background:var(--verde);color:#fff}
+    .mes-btn.parcial{background:var(--naranja);color:#fff}
+    .mes-btn.pendiente{background:#fde8e8;color:var(--rojo);border-color:#fca5a5}
+    .mes-btn.futuro{background:#f1f5f9;color:#cbd5e1;cursor:default}
+    .mes-btn.seleccionado{transform:scale(1.1);box-shadow:0 3px 10px rgba(0,0,0,.15)}
+    .mes-btn .importe{font-size:7px;opacity:.85}
+    .detalle-mes{background:var(--card);border-radius:12px;margin:0 11px 9px;padding:11px;border:1.5px solid var(--borde)}
+    .det-titulo{font-size:12px;font-weight:900;color:var(--texto);margin-bottom:8px}
+  </style>
+</head>
+<body>
+<div class="page">
+  <div id="header-container"></div>
+  <div class="sep"></div>
+
+  <div class="cobros-header-info">
+    <div class="alumno-row" id="alumno-row">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+    <div class="anio-nav">
+      <select class="anio-sel" id="anio-sel" onchange="cambiarAnioSel(this.value)"></select>
+    </div>
+    <div class="resumen-row" id="resumen-row"></div>
+  </div>
+
+  <main class="content" style="padding-top:10px">
+    <div class="mes-grid" id="mes-grid"></div>
+    <div class="detalle-mes" id="detalle-mes" style="display:none"></div>
+
+    <div class="sec" style="margin-top:4px">
+      <div class="sec-title">Historial</div>
+    </div>
+    <div id="lista-cobros"><div class="loading"><div class="spinner"></div></div></div>
+  </main>
+
+  <button class="btn-añadir" style="position:fixed;bottom:14px;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:452px;z-index:40" onclick="abrirNuevoCobro()">
+    + Añadir cobro
+  </button>
+
+  <!-- Sheet añadir cobro -->
+  <div class="overlay" id="sh-cobro">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Nuevo cobro</div>
+
+      <div class="filter-label">Tipo</div>
+      <div class="tipos-row" id="tipos-row">
+        <div class="tipo-btn activo" data-tipo="Mensual"    onclick="selTipo(this)"><img src="icons/mensual.png"><span>Mensual</span></div>
+        <div class="tipo-btn"        data-tipo="Particular" onclick="selTipo(this)"><img src="icons/particular.png"><span>Particular</span></div>
+        <div class="tipo-btn"        data-tipo="Matrícula"  onclick="selTipo(this)"><img src="icons/matricula.png"><span>Matrícul.</span></div>
+        <div class="tipo-btn"        data-tipo="Bono"       onclick="selTipo(this)"><img src="icons/bono.png"><span>Bono</span></div>
+        <div class="tipo-btn"        data-tipo="Libre"      onclick="selTipo(this)"><img src="icons/libre.png"><span>Libre</span></div>
+      </div>
+
+      <div class="frow">
+        <div class="fgrp">
+          <div class="flbl">Importe (€)</div>
+          <input class="finp" id="co-importe" type="number" placeholder="0.00" step="0.01">
+        </div>
+        <div class="fgrp">
+          <div class="flbl">Fecha</div>
+          <input class="finp" id="co-fecha" type="date">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fgrp">
+          <div class="flbl">Mes</div>
+          <select class="fsel" id="co-mes">
+            <option value="">Sin asignar</option>
+            <option>Enero</option><option>Febrero</option><option>Marzo</option>
+            <option>Abril</option><option>Mayo</option><option>Junio</option>
+            <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+            <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+          </select>
+        </div>
+        <div class="fgrp">
+          <div class="flbl">Forma de pago</div>
+          <select class="fsel" id="co-forma">
+            <option>Efectivo</option>
+            <option>Bizum</option>
+            <option>Transferencia</option>
+            <option>Tarjeta</option>
+            <option>Domiciliación</option>
+          </select>
+        </div>
+      </div>
+      <div class="sheet-btns">
+        <button class="sbtn" onclick="closeSheet('sh-cobro')">Cancelar</button>
+        <button class="sbtn prim" onclick="guardarCobro()">✓ Registrar cobro</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <div class="confirm-titulo">¿Eliminar cobro?</div>
+      <div class="confirm-texto">Esta acción no se puede deshacer.</div>
+      <div class="confirm-btns">
+        <button class="cbtn" onclick="document.getElementById('confirm-overlay').classList.remove('open')">Cancelar</button>
+        <button class="cbtn danger" id="confirm-ok">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script>
+const params    = new URLSearchParams(location.search);
+const alumnoId  = params.get('alumno_id');
+let _alumno     = null;
+let _cobros     = [];
+let _anio       = new Date().getFullYear();
+let _mesSelec   = null;
+let _tipoSelec  = 'Mensual';
+let _editCobroId = null;
+
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_CORTO = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+const ICONO_TIPO = { Mensual:'icons/mensual.png', Particular:'icons/particular.png',
+                     'Matrícula':'icons/matricula.png', Bono:'icons/bono.png', Libre:'icons/libre.png' };
+const TIPO_COLOR = { Mensual:'#2563eb', Particular:'#7c3aed', 'Matrícula':'#f59e0b', Bono:'#16a34a', Libre:'#64748b' };
+
+function selTipo(btn) {
+  btn.closest('#tipos-row').querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('activo'));
+  btn.classList.add('activo');
+  _tipoSelec = btn.dataset.tipo;
+}
+
+function cambiarAnioSel(val) {
+  _anio = +val; _mesSelec = null;
+  cargarCobros();
+}
+
+function poblarAnioSel() {
+  const anioActual = new Date().getFullYear();
+  const aniosConCobros = [...new Set(_cobros.map(c => c.fecha ? new Date(c.fecha).getFullYear() : null).filter(Boolean))].sort((a,b)=>b-a);
+  if (!aniosConCobros.includes(anioActual)) aniosConCobros.unshift(anioActual);
+  // Incluir también el año actual -1 y +1 para navegar fácilmente
+  [-1,0,1].forEach(d => { const a=anioActual+d; if(!aniosConCobros.includes(a)) aniosConCobros.push(a); });
+  aniosConCobros.sort((a,b)=>b-a);
+  const sel = document.getElementById('anio-sel');
+  if (!sel) return;
+  sel.innerHTML = aniosConCobros.map(a=>`<option value="${a}" ${a===_anio?'selected':''}>${a}</option>`).join('');
+}
+
+function estadoMes(mes) {
+  const cobrosM = _cobros.filter(c => c.mes === mes && new Date(c.fecha).getFullYear() === _anio);
+  if (!cobrosM.length) return null;
+  const total = cobrosM.reduce((s,c)=>s+(+c.importe||0),0);
+  return { estado:'pagado', total, cobros: cobrosM };
+}
+
+function renderMeses() {
+  const now = new Date(); const mesActual = now.getMonth(); const anioActual = now.getFullYear();
+  const grid = document.getElementById('mes-grid');
+  grid.innerHTML = MESES.map((mes, i) => {
+    const info = estadoMes(mes);
+    const esFuturo = _anio > anioActual || (_anio === anioActual && i > mesActual);
+    let cls = 'futuro', txt = '';
+    if (!esFuturo && info) { cls = 'pagado'; txt = `<div class="importe">${info.total}€</div>`; }
+    const sel = _mesSelec === mes ? 'seleccionado' : '';
+    return `<div class="mes-btn ${cls} ${sel}" onclick="seleccionarMes('${mes}','${cls}')">
+      ${MESES_CORTO[i]}${txt}
+    </div>`;
+  }).join('');
+}
+
+function seleccionarMes(mes, estado) {
+  if (estado === 'futuro') return;
+  _mesSelec = _mesSelec === mes ? null : mes;
+  renderMeses();
+  renderDetalleMes();
+}
+
+function renderDetalleMes() {
+  const el = document.getElementById('detalle-mes');
+  if (!_mesSelec) { el.style.display='none'; return; }
+  const info = estadoMes(_mesSelec);
+  el.style.display = 'block';
+  el.innerHTML = `<div class="det-titulo">📅 ${_mesSelec} ${_anio}</div>` +
+    (info ? info.cobros.map(c => `
+      <div class="pago-item">
+        <div class="pago-ico" style="background:${TIPO_COLOR[c.tipo]}22">
+          <img src="${ICONO_TIPO[c.tipo]||'icons/libre.png'}">
+        </div>
+        <div class="pago-info">
+          <div class="pago-concepto">${c.tipo}</div>
+          <div class="pago-meta"><span>${formatFecha(c.fecha)}</span><span>· ${c.forma_pago||''}</span></div>
+        </div>
+        <div class="pago-importe">${c.importe}€</div>
+        <button onclick="eliminarCobro('${c.id}')" style="background:none;border:none;color:var(--rojo);font-size:16px;cursor:pointer;padding:0 0 0 6px">×</button>
+      </div>`).join('') :
+      `<div style="font-size:12px;color:var(--sutil);font-weight:600">Sin cobros en ${_mesSelec}</div>`);
+}
+
+function renderResumen() {
+  const cobrosAnio = _cobros.filter(c => new Date(c.fecha).getFullYear() === _anio);
+  const cobrado   = cobrosAnio.reduce((s,c)=>s+(+c.importe||0),0);
+  document.getElementById('resumen-row').innerHTML = `
+    <div class="res-kpi verde"><div class="val">${cobrado.toFixed(0)}€</div><div class="lbl">Cobrado</div></div>
+    <div class="res-kpi azul"><div class="val">${cobrosAnio.length}</div><div class="lbl">Cobros</div></div>`;
+}
+
+function renderHistorial() {
+  const el = document.getElementById('lista-cobros');
+  if (!_cobros.length) { showEmpty('lista-cobros','Sin cobros registrados'); return; }
+  const recientes = [..._cobros].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  el.innerHTML = recientes.map(c => `
+    <div class="card" id="card-${c.id}">
+      <div class="card-main" onclick="toggleCard('${c.id}')">
+        <div class="pago-ico" style="background:${TIPO_COLOR[c.tipo]||'#f1f5f9'}22;border-radius:8px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <img src="${ICONO_TIPO[c.tipo]||'icons/libre.png'}" style="width:24px;height:24px;object-fit:contain">
+        </div>
+        <div class="ci">
+          <div class="cn">${c.tipo}${c.mes?' — '+c.mes:''}</div>
+          <div class="cm" style="font-size:11px;color:var(--sutil);font-weight:600">${formatFecha(c.fecha)} · ${c.forma_pago||'—'}</div>
+        </div>
+        <div style="font-size:14px;font-weight:900;color:var(--verde);margin-right:4px">${(+c.importe||0).toFixed(0)}€</div>
+        <div class="chev" id="chev-${c.id}">▼</div>
+      </div>
+      <div class="exp" id="exp-${c.id}">
+        <div class="abtns">
+          <button class="abtn prim" onclick="abrirEditarCobro('${c.id}')">✏️ Editar</button>
+          <button class="abtn dang" onclick="eliminarCobro('${c.id}')">🗑 Eliminar</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function abrirEditarCobro(id) {
+  const c = _cobros.find(x => x.id === id);
+  if (!c) return;
+  // Reutilizar el sheet, cargando datos del cobro
+  _editCobroId = id;
+  document.querySelector('#sh-cobro .sheet-title').textContent = 'Editar cobro';
+  _tipoSelec = c.tipo || 'Mensual';
+  document.querySelectorAll('#tipos-row .tipo-btn').forEach(b => {
+    b.classList.toggle('activo', b.dataset.tipo === _tipoSelec);
+  });
+  document.getElementById('co-importe').value = c.importe || '';
+  document.getElementById('co-fecha').value   = c.fecha || '';
+  document.getElementById('co-mes').value     = c.mes   || '';
+  document.getElementById('co-forma').value   = c.forma_pago || 'Efectivo';
+  openSheet('sh-cobro');
+}
+
+async function guardarCobro() {
+  const importe = parseFloat(document.getElementById('co-importe').value);
+  if (!importe || importe <= 0) { toast('Introduce un importe válido','warn'); return; }
+  const cobro = {
+    id:         _editCobroId || undefined,
+    alumno_id:  alumnoId,
+    tipo:       _tipoSelec,
+    importe,
+    fecha:      document.getElementById('co-fecha').value || new Date().toISOString().slice(0,10),
+    mes:        document.getElementById('co-mes').value || null,
+    forma_pago: document.getElementById('co-forma').value,
+  };
+  try {
+    await saveCobro(cobro);
+    _editCobroId = null;
+    document.querySelector('#sh-cobro .sheet-title').textContent = 'Nuevo cobro';
+    closeSheet('sh-cobro');
+    toast(_editCobroId ? 'Cobro actualizado' : 'Cobro registrado','ok');
+    await cargarCobros();
+  } catch(e) { toast('Error al guardar','err'); console.error(e); }
+}
+
+async function eliminarCobro(id) {
+  document.getElementById('confirm-overlay').classList.add('open');
+  document.getElementById('confirm-ok').onclick = async () => {
+    document.getElementById('confirm-overlay').classList.remove('open');
+    try { await deleteCobro(id); toast('Cobro eliminado','ok'); await cargarCobros(); }
+    catch(e) { toast('Error','err'); }
+  };
+}
+
+async function cargarAlumno() {
+  const { data } = await _sb.from('alumnos').select('*,grupos:alumno_grupos(grupos(nombre))').eq('id',alumnoId).single();
+  _alumno = data;
+  const gs = (data.grupos||[]).map(r=>r.grupos?.nombre).filter(Boolean).join(', ');
+  document.getElementById('alumno-row').innerHTML = `
+    ${avatarHTML(data.nombre,'',36)}
+    <div style="flex:1">
+      <div style="font-size:15px;font-weight:900;color:var(--texto)">${data.nombre}</div>
+      <div style="font-size:11px;color:var(--sutil);font-weight:600">${chipNivel(data.nivel)}${gs?` · ${gs}`:''}</div>
+    </div>
+    <a href="alumnos.html" style="font-size:20px;color:var(--sub)">←</a>`;
+}
+
+async function cargarCobros() {
+  _cobros = await getCobrosAlumno(alumnoId);
+  renderMeses();
+  renderResumen();
+  renderDetalleMes();
+  renderHistorial();
+  poblarAnioSel();
+}
+
+// Preseleccionar mes actual en el sheet
+function abrirNuevoCobro() {
+  _editCobroId = null;
+  document.querySelector('#sh-cobro .sheet-title').textContent = 'Nuevo cobro';
+  preseleccionarMes();
+  openSheet('sh-cobro');
+}
+
+function preseleccionarMes() {
+  const mesActual = MESES[new Date().getMonth()];
+  document.getElementById('co-mes').value = mesActual;
+  document.getElementById('co-fecha').value = new Date().toISOString().slice(0,10);
+}
+
+async function init() {
+  if (!alumnoId) { window.location.href='alumnos.html'; return; }
+  await initStore();
+  await cargarAlumno();
+  renderHeader({ titulo:'Cobros', subtitulo:_alumno?.nombre||'', icono:'icons/mensual.png', botonDerecho:'back', onBack:'alumnos.html' });
+  await cargarCobros();
+  preseleccionarMes();
+}
+init();
+</script>
+</body>
+</html>

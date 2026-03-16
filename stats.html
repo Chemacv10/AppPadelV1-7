@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Stats — Escuela de Pádel</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .stats-sec { background:var(--card); border-radius:12px; margin-bottom:9px; border:1.5px solid var(--borde); overflow:hidden; }
+    .stats-sec-hdr { padding:10px 13px 6px; font-size:11px; font-weight:900; color:var(--sub); text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid #f0f4f8; }
+
+    /* ocupación grupos */
+    .ocup-list  { padding:6px 11px 10px; }
+    .ocup-item  { margin-bottom:10px; }
+    .ocup-item:last-child { margin-bottom:0; }
+    .ocup-head  { display:flex; justify-content:space-between; margin-bottom:3px; }
+    .ocup-name  { font-size:11px; font-weight:800; color:var(--texto); }
+    .ocup-meta  { font-size:10px; color:var(--sutil); }
+    .ocup-bar-row { display:flex; align-items:center; gap:6px; }
+    .ocup-track { flex:1; height:7px; background:#f1f5f9; border-radius:10px; overflow:hidden; }
+    .ocup-fill  { height:100%; border-radius:10px; }
+    .ocup-nums  { font-size:10px; font-weight:900; min-width:24px; text-align:right; }
+
+    /* alertas */
+    .alert-list { padding:8px 11px 10px; display:flex; flex-direction:column; gap:6px; }
+    .alert-item { border-radius:8px; padding:7px 10px; display:flex; align-items:center; gap:7px; }
+    .alert-msg  { font-size:12px; font-weight:700; }
+
+    /* ranking torneos */
+    .rank-list { padding:6px 11px 10px; }
+    .rank-item { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+    .rank-item:last-child { margin-bottom:0; }
+    .rank-pos  { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:900; flex-shrink:0; }
+    .rank-name { flex:1; font-size:12px; font-weight:800; color:var(--texto); }
+    .rank-pts  { font-size:13px; font-weight:900; color:var(--morado); }
+
+    /* año selector en cobros */
+    .anio-row  { display:flex; align-items:center; justify-content:space-between; padding:8px 13px 0; }
+    .anio-lbl  { font-size:11px; font-weight:900; color:var(--sub); text-transform:uppercase; letter-spacing:.5px; }
+    .anio-sel  {
+      appearance:none;
+      background:#f1f5f9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;
+      border:1.5px solid transparent; border-radius:8px;
+      padding:5px 26px 5px 10px; font-size:12px; font-weight:800; color:var(--texto);
+      outline:none; cursor:pointer; font-family:Nunito,sans-serif;
+    }
+    .anio-sel:focus { border-color:var(--azul); }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div id="header-container"></div>
+  <nav id="nav-container"></nav>
+
+  <main class="content">
+
+    <!-- Sección — iconos fbtn igual que el resto de la app -->
+    <div class="filter-label">Sección</div>
+    <div class="filters f4">
+      <div class="fbtn active" data-sec="general"    onclick="sfSec(this)"><img src="icons/inicio.png"><div class="flabel">General</div></div>
+      <div class="fbtn"        data-sec="alumnos"    onclick="sfSec(this)"><img src="icons/alumnos.png"><div class="flabel">Alumnos</div></div>
+      <div class="fbtn"        data-sec="grupos"     onclick="sfSec(this)"><img src="icons/grupos.png"><div class="flabel">Grupos</div></div>
+      <div class="fbtn"        data-sec="ejercicios" onclick="sfSec(this)"><img src="icons/ejercicios.png"><div class="flabel">Ejerc.</div></div>
+    </div>
+    <div class="filters f4" style="margin-top:3px">
+      <div class="fbtn" data-sec="clases"     onclick="sfSec(this)"><img src="icons/clases.png"><div class="flabel">Clases</div></div>
+      <div class="fbtn" data-sec="torneos"    onclick="sfSec(this)"><img src="icons/torneos.png"><div class="flabel">Torneos</div></div>
+      <div class="fbtn" data-sec="cobros"     onclick="sfSec(this)"><img src="icons/mensual.png"><div class="flabel">Cobros</div></div>
+      <div class="fbtn" data-sec="pistas"     onclick="sfSec(this)"><img src="icons/pistas.png"><div class="flabel">Pistas</div></div>
+    </div>
+
+    <!-- Período — desplegable -->
+    <div class="filter-label" style="margin-top:8px">Período</div>
+    <select class="fsel" id="sel-periodo" onchange="sfPer(this.value)">
+      <option value="semana">Esta semana</option>
+      <option value="mes" selected>Este mes</option>
+      <option value="trimestre">Últimos 3 meses</option>
+      <option value="anio">Este año</option>
+      <option value="todo">Todo</option>
+    </select>
+
+    <div id="stats-contenido" style="margin-top:4px">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script>
+let _seccion     = 'general';
+let _periodo     = 'mes';
+let _datos       = {};
+let _aniosCobros = new Date().getFullYear();
+
+// ── Navegación ────────────────────────────────
+function sfSec(btn) {
+  document.querySelectorAll('[data-sec]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _seccion = btn.dataset.sec;
+  renderStats();
+}
+function sfPer(val) {
+  _periodo = val;
+  cargar();
+}
+function cambiarAnioCobros(val) {
+  _aniosCobros = +val;
+  renderStats();
+}
+
+// ── Helpers ───────────────────────────────────
+function kpiRow(kpis) {
+  return `<div class="kpi-row kpi-${kpis.length <= 2 ? '2' : '3'}">${kpis.map(k => `
+    <div class="kpi ${k.color || 'azul'}">
+      <div class="kpi-val">${k.val}</div>
+      <div class="kpi-lbl">${k.lbl}</div>
+    </div>`).join('')}</div>`;
+}
+
+function barras(items, colorFill = '#2563eb') {
+  if (!items || !items.length) return '<div class="empty-state" style="margin:8px 11px">Sin datos</div>';
+  const max = Math.max(...items.map(i => i.val), 1);
+  return `<div class="bar-section">${items.map(i => `
+    <div class="bar-row">
+      <div class="bar-label">${i.lbl}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(i.val / max * 100).toFixed(0)}%;background:${colorFill}"></div></div>
+      <div class="bar-val">${i.val}</div>
+    </div>`).join('')}</div>`;
+}
+
+// ── Renders por sección ───────────────────────
+
+function renderGeneral() {
+  const d = _datos;
+  const alertas = [];
+  if ((d.torneosEnCurso || 0) > 0)
+    alertas.push({ bg:'#fff1f2', color:'#e05a5a', icon:'⚠️', msg:`${d.torneosEnCurso} torneo${d.torneosEnCurso>1?'s':''} en curso sin finalizar` });
+  if ((d.numPendientes || 0) > 0)
+    alertas.push({ bg:'#fffbeb', color:'#d97706', icon:'💶', msg:`${d.numPendientes} cobro${d.numPendientes>1?'s':''} pendiente${d.numPendientes>1?'s':''} (${(d.totalPendiente||0).toFixed(0)}€)` });
+  if ((d.clasesProgramadasSemana || 0) > 0)
+    alertas.push({ bg:'#eff6ff', color:'#2563eb', icon:'📅', msg:`${d.clasesProgramadasSemana} clase${d.clasesProgramadasSemana>1?'s':''} programada${d.clasesProgramadasSemana>1?'s':''} esta semana` });
+
+  return `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Resumen general</div>
+      ${kpiRow([
+        {val:d.totalAlumnos||0,   lbl:'Alumnos',    color:'azul'},
+        {val:d.totalGrupos||0,    lbl:'Grupos',     color:'verde'},
+        {val:d.totalEjercicio||0, lbl:'Ejercicios', color:'naranja'},
+      ])}
+      ${kpiRow([
+        {val:d.totalClases||0,                      lbl:'Clases',   color:'azul'},
+        {val:d.totalTorneos||0,                     lbl:'Torneos',  color:'morado'},
+        {val:(d.totalCobrado||0).toFixed(0)+'€',    lbl:'Cobrado',  color:'verde'},
+      ])}
+    </div>
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Actividad del período</div>
+      ${kpiRow([
+        {val:d.alumnosNuevos||0,                        lbl:'Alumnos nuevos',    color:'verde'},
+        {val:d.clasesRealizadas||0,                     lbl:'Clases realizadas', color:'azul'},
+        {val:(d.asistenciaMedia||0).toFixed(0)+'%',     lbl:'Asistencia media',  color:'naranja'},
+      ])}
+    </div>
+    ${alertas.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Alertas</div>
+      <div class="alert-list">
+        ${alertas.map(a=>`
+          <div class="alert-item" style="background:${a.bg}">
+            <span>${a.icon}</span>
+            <span class="alert-msg" style="color:${a.color}">${a.msg}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}`;
+}
+
+function renderAlumnos() {
+  const d = _datos;
+  const porNivel = Object.entries(d.alumnosPorNivel||{}).map(([lbl,val])=>({lbl,val}));
+  const porGrupo = (d.gruposConAlumnos||[]).map(g=>({lbl:g.nombre,val:g.num_alumnos||0}));
+  return `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Totales</div>
+      ${kpiRow([
+        {val:d.totalAlumnos||0,                        lbl:'Total',           color:'azul'},
+        {val:d.alumnosNuevos||0,                       lbl:'Nuevos período',  color:'verde'},
+        {val:(d.asistenciaMedia||0).toFixed(0)+'%',    lbl:'Asistencia media',color:'naranja'},
+      ])}
+    </div>
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por nivel</div>
+      ${barras(porNivel,'#2563eb')}
+    </div>
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por grupo</div>
+      ${barras(porGrupo,'#7c3aed')}
+    </div>`;
+}
+
+function renderGrupos() {
+  const d = _datos;
+  const gs = d.gruposConAlumnos || [];
+  const porMonitor = {};
+  gs.forEach(g => { if (g.monitor) porMonitor[g.monitor] = (porMonitor[g.monitor]||0) + (g.num_alumnos||0); });
+  const monitores = Object.entries(porMonitor).map(([lbl,val])=>({lbl,val})).sort((a,b)=>b.val-a.val);
+
+  const ocupHtml = gs.length ? `<div class="ocup-list">${gs.map(g => {
+    const max = 10; // sin campo capacidad en BD, usamos 10 como referencia visual
+    const pct = Math.min(Math.round((g.num_alumnos||0)/max*100), 100);
+    const color = pct>=90?'#e05a5a':pct>=70?'#d97706':'#16a34a';
+    return `<div class="ocup-item">
+      <div class="ocup-head">
+        <span class="ocup-name">${g.nombre}</span>
+        <span class="ocup-meta">${g.monitor||'—'} · ${g.pista||'—'}</span>
+      </div>
+      <div class="ocup-bar-row">
+        <div class="ocup-track"><div class="ocup-fill" style="width:${pct}%;background:${color}"></div></div>
+        <div class="ocup-nums" style="color:${color}">${g.num_alumnos||0}</div>
+      </div>
+    </div>`;
+  }).join('')}</div>` : '<div class="empty-state" style="margin:8px 11px">Sin grupos</div>';
+
+  return `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Totales</div>
+      ${kpiRow([
+        {val:d.totalGrupos||0, lbl:'Grupos', color:'azul'},
+        {val:gs.reduce((s,g)=>s+(g.num_alumnos||0),0), lbl:'Alumnos total', color:'verde'},
+      ])}
+    </div>
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Alumnos por grupo</div>
+      ${ocupHtml}
+    </div>
+    ${monitores.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Alumnos por monitor</div>
+      ${barras(monitores,'#16a34a')}
+    </div>` : ''}`;
+}
+
+function renderEjercicios() {
+  const d = _datos;
+  const porCat = {};
+  (d.ejercicios||[]).forEach(e => { const k=e.categoria||'Sin categoría'; porCat[k]=(porCat[k]||0)+1; });
+  const catItems = Object.entries(porCat).map(([lbl,val])=>({lbl,val})).sort((a,b)=>b.val-a.val);
+  const top = [...(d.ejercicios||[])].sort((a,b)=>(b.usos||0)-(a.usos||0)).slice(0,6).map(e=>({lbl:e.nombre,val:e.usos||0}));
+  const inactivos = (d.ejerciciosTotal||0)-(d.totalEjercicio||0);
+  return `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Biblioteca</div>
+      ${kpiRow([
+        {val:d.ejerciciosTotal||0, lbl:'Total',    color:'naranja'},
+        {val:d.totalEjercicio||0,  lbl:'Activos',  color:'verde'},
+        {val:inactivos,            lbl:'Inactivos', color:'gris'},
+      ])}
+    </div>
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por categoría</div>
+      ${barras(catItems,'#f59e0b')}
+    </div>
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Top más usados</div>
+      ${barras(top,'#2563eb')}
+    </div>`;
+}
+
+function renderClases() {
+  const d = _datos;
+  const estados = [
+    {lbl:'Realizadas',  val:d.clasesPorEstado?.Realizada||0},
+    {lbl:'Programadas', val:d.clasesPorEstado?.Programada||0},
+    {lbl:'Suspendidas', val:d.clasesPorEstado?.Suspendida||0},
+  ];
+  const porTipo = {};
+  (d.clasesData||[]).forEach(c=>{ if(c.tipo_clase) porTipo[c.tipo_clase]=(porTipo[c.tipo_clase]||0)+1; });
+  const tipoItems = Object.entries(porTipo).map(([lbl,val])=>({lbl,val})).sort((a,b)=>b.val-a.val);
+  const porGrupoMap = {};
+  (d.clasesData||[]).forEach(c=>{ const n=d.gruposMap?.[c.grupo_id]||'Sin grupo'; porGrupoMap[n]=(porGrupoMap[n]||0)+1; });
+  const grupoItems = Object.entries(porGrupoMap).map(([lbl,val])=>({lbl,val})).sort((a,b)=>b.val-a.val);
+
+  return `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Totales</div>
+      ${kpiRow([
+        {val:d.totalClases||0,                        lbl:'Total',       color:'azul'},
+        {val:d.clasesPorEstado?.Realizada||0,         lbl:'Realizadas',  color:'verde'},
+        {val:d.clasesPorEstado?.Suspendida||0,        lbl:'Suspendidas', color:'rojo'},
+      ])}
+      ${kpiRow([
+        {val:(d.asistenciaMedia||0).toFixed(0)+'%',   lbl:'Asistencia media',  color:'naranja'},
+        {val:(d.ejerciciosPorClase||0).toFixed(1),    lbl:'Ejercicios/clase',  color:'azul'},
+        {val:d.clasesPorEstado?.Programada||0,        lbl:'Programadas',       color:'gris'},
+      ])}
+    </div>
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por estado</div>
+      ${barras(estados,'#2563eb')}
+    </div>
+    ${tipoItems.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por tipo</div>
+      ${barras(tipoItems,'#16a34a')}
+    </div>` : ''}
+    ${grupoItems.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por grupo</div>
+      ${barras(grupoItems,'#7c3aed')}
+    </div>` : ''}`;
+}
+
+function renderTorneos() {
+  const d = _datos;
+  const porTipo = {};
+  (d.torneosData||[]).forEach(t=>{ const k=t.tipo||'Otro'; porTipo[k]=(porTipo[k]||0)+1; });
+  const tipoItems = Object.entries(porTipo).map(([lbl,val])=>({lbl,val})).sort((a,b)=>b.val-a.val);
+  const pendientes = (d.totalTorneos||0)-(d.torneosEnCurso||0)-(d.torneosFinalizados||0);
+
+  return `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Estado</div>
+      ${kpiRow([
+        {val:d.totalTorneos||0,       lbl:'Total',       color:'morado'},
+        {val:d.torneosEnCurso||0,     lbl:'En curso',    color:'naranja'},
+        {val:d.torneosFinalizados||0, lbl:'Finalizados', color:'verde'},
+      ])}
+      ${kpiRow([
+        {val:d.mediajugadoresTorneo||0, lbl:'Media jugadores', color:'azul'},
+        {val:Math.max(pendientes,0),    lbl:'Pendientes',      color:'gris'},
+      ])}
+    </div>
+    ${tipoItems.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por tipo</div>
+      ${barras(tipoItems,'#7c3aed')}
+    </div>` : ''}
+    ${(d.rankingJugadores||[]).length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">🏅 Ranking global (puntos acumulados)</div>
+      <div class="rank-list">
+        ${(d.rankingJugadores||[]).map((j,i)=>{
+          const medals=['#fbbf24','#94a3b8','#d97706'];
+          return `<div class="rank-item">
+            <div class="rank-pos" style="background:${medals[i]||'#f1f5f9'};color:${i<3?'#fff':'#64748b'}">${i+1}</div>
+            <div class="rank-name">${j.nombre}</div>
+            <div class="rank-pts">${j.puntos} pts</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}`;
+}
+
+function renderCobros() {
+  const d = _datos;
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const porMes = Array(12).fill(0);
+  (d.cobrosData||[]).forEach(c => {
+    if (!c.fecha) return;
+    const f = new Date(c.fecha);
+    if (f.getFullYear() === _aniosCobros) porMes[f.getMonth()] += (+c.importe||0);
+  });
+  const mesItems = MESES.map((lbl,i)=>({lbl,val:Math.round(porMes[i])}));
+  const maxMes = Math.max(...mesItems.map(i=>i.val),1);
+
+  const aniosDisp = [...new Set((d.cobrosData||[]).map(c=>c.fecha?new Date(c.fecha).getFullYear():null).filter(Boolean))].sort((a,b)=>b-a);
+  const anioActual = new Date().getFullYear();
+  if (!aniosDisp.includes(anioActual)) aniosDisp.unshift(anioActual);
+  const anioOpts = aniosDisp.map(a=>`<option value="${a}" ${a===_aniosCobros?'selected':''}>${a}</option>`).join('');
+
+  const porFP = {};
+  (d.cobrosData||[]).forEach(c=>{ const k=c.forma_pago||'Sin especificar'; porFP[k]=(porFP[k]||0)+1; });
+  const fpItems = Object.entries(porFP).map(([lbl,val])=>({lbl,val})).sort((a,b)=>b.val-a.val);
+  const porTipo = {};
+  (d.cobrosData||[]).forEach(c=>{ const k=c.tipo||'Sin tipo'; porTipo[k]=(porTipo[k]||0)+1; });
+  const tipoItems = Object.entries(porTipo).map(([lbl,val])=>({lbl,val})).sort((a,b)=>b.val-a.val);
+
+  return `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Resumen período</div>
+      ${kpiRow([
+        {val:(d.totalCobrado||0).toFixed(0)+'€',  lbl:'Cobrado',      color:'verde'},
+        {val:(d.totalPendiente||0).toFixed(0)+'€',lbl:'Pendiente',    color:'rojo'},
+        {val:(d.mediaAlumno||0).toFixed(0)+'€',   lbl:'Media/alumno', color:'azul'},
+      ])}
+      ${kpiRow([
+        {val:d.numCobros||0,    lbl:'Cobros',     color:'azul'},
+        {val:d.numPendientes||0,lbl:'Pendientes', color:'rojo'},
+      ])}
+    </div>
+    <div class="stats-sec">
+      <div class="anio-row">
+        <span class="anio-lbl">Evolución mensual (€)</span>
+        <select class="anio-sel" onchange="cambiarAnioCobros(this.value)">${anioOpts}</select>
+      </div>
+      <div class="bar-section" style="margin-top:8px">
+        ${mesItems.map(i=>`
+          <div class="bar-row">
+            <div class="bar-label">${i.lbl}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${(i.val/maxMes*100).toFixed(0)}%;background:#16a34a"></div></div>
+            <div class="bar-val">${i.val>0?i.val+'€':'—'}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    ${fpItems.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por forma de pago</div>
+      ${barras(fpItems,'#2563eb')}
+    </div>` : ''}
+    ${tipoItems.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por tipo</div>
+      ${barras(tipoItems,'#f59e0b')}
+    </div>` : ''}`;
+}
+
+function renderPistas() {
+  const d = _datos;
+  const porPista = {};
+  (d.bloquesData||[]).forEach(b=>{ const k=b.pista||'Sin pista'; porPista[k]=(porPista[k]||0)+1; });
+  const pistaItems = Object.entries(porPista).map(([lbl,val])=>({lbl,val})).sort((a,b)=>b.val-a.val);
+  const porTipo = {};
+  (d.bloquesData||[]).forEach(b=>{ const k=b.tipo||'Sin tipo'; porTipo[k]=(porTipo[k]||0)+1; });
+  const tipoItems = Object.entries(porTipo).map(([lbl,val])=>({lbl,val})).sort((a,b)=>b.val-a.val);
+  const porHora = {};
+  (d.bloquesData||[]).forEach(b=>{ if(b.hora_inicio){ const h=b.hora_inicio.slice(0,5); porHora[h]=(porHora[h]||0)+1; } });
+  const horaItems = Object.entries(porHora).map(([lbl,val])=>({lbl,val})).sort((a,b)=>a.lbl.localeCompare(b.lbl));
+
+  return `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Totales</div>
+      ${kpiRow([
+        {val:d.semanas||0,lbl:'Semanas registradas',color:'azul'},
+        {val:d.bloques||0,lbl:'Bloques totales',    color:'verde'},
+      ])}
+    </div>
+    ${pistaItems.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Bloques por pista</div>
+      ${barras(pistaItems,'#2563eb')}
+    </div>` : ''}
+    ${tipoItems.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">Por tipo de bloque</div>
+      ${barras(tipoItems,'#f59e0b')}
+    </div>` : ''}
+    ${horaItems.length ? `
+    <div class="stats-sec">
+      <div class="stats-sec-hdr">🕐 Horas pico (nº bloques)</div>
+      ${barras(horaItems,'#7c3aed')}
+    </div>` : ''}`;
+}
+
+function renderStats() {
+  const renders = {general:renderGeneral,alumnos:renderAlumnos,grupos:renderGrupos,
+    ejercicios:renderEjercicios,clases:renderClases,torneos:renderTorneos,
+    cobros:renderCobros,pistas:renderPistas};
+  document.getElementById('stats-contenido').innerHTML = (renders[_seccion]||renderGeneral)();
+}
+
+// ── Carga Supabase ────────────────────────────
+async function cargar() {
+  showLoading('stats-contenido');
+  try {
+    const hoy = new Date();
+    let desde = null;
+    if (_periodo==='semana')    { desde=new Date(hoy); desde.setDate(hoy.getDate()-7); }
+    else if (_periodo==='mes')  { desde=new Date(hoy.getFullYear(),hoy.getMonth(),1); }
+    else if (_periodo==='trimestre') { desde=new Date(hoy); desde.setMonth(hoy.getMonth()-3); }
+    else if (_periodo==='anio') { desde=new Date(hoy.getFullYear(),0,1); }
+    const desdeStr = desde ? desde.toISOString().slice(0,10) : null;
+
+    const [
+      alumnos, grupos, ejerciciosActivos, ejerciciosTodos,
+      clases, claseAsistencia, claseEjercicios,
+      torneos, participantes, partidos,
+      cobros, semanas,
+    ] = await Promise.all([
+      _sb.from('alumnos').select('id,nivel,created_at,grupo_id').eq('escuela_id',Store.escuelaId),
+      _sb.from('grupos').select('id,nombre,nivel,monitor,pista').eq('escuela_id',Store.escuelaId).order('nombre'),
+      _sb.from('ejercicios').select('id,nombre,usos,categoria').eq('escuela_id',Store.escuelaId).eq('activo',true),
+      _sb.from('ejercicios').select('id').eq('escuela_id',Store.escuelaId),
+      _sb.from('clases').select('id,estado,fecha,grupo_id,tipo_clase').eq('escuela_id',Store.escuelaId),
+      _sb.from('clase_asistencia').select('clase_id,asistio'),
+      _sb.from('clase_ejercicios').select('clase_id').eq('realizado',true),
+      _sb.from('torneos').select('id,nombre,tipo,estado').eq('escuela_id',Store.escuelaId),
+      _sb.from('participantes').select('torneo_id,nombre'),
+      _sb.from('partidos').select('torneo_id,resultado_a,resultado_b,pareja_a,pareja_b').not('resultado_a','is',null),
+      _sb.from('cobros').select('id,importe,fecha,forma_pago,tipo,alumno_id').eq('escuela_id',Store.escuelaId),
+      _sb.from('semanas_pista').select('id').eq('escuela_id',Store.escuelaId),
+    ]);
+
+    const filtrar = (arr,campo) => !desdeStr?(arr||[]):(arr||[]).filter(x=>x[campo]>=desdeStr);
+    const clasesF = filtrar(clases.data,'fecha');
+    const cobrosF = filtrar(cobros.data,'fecha');
+
+    // Grupos con alumnos (usando grupo_id directo — fix bug alumno_grupos)
+    const gruposConAlumnos = (grupos.data||[]).map(g=>({
+      ...g, num_alumnos:(alumnos.data||[]).filter(a=>a.grupo_id===g.id).length,
+    }));
+    const gruposMap = {};
+    (grupos.data||[]).forEach(g=>{ gruposMap[g.id]=g.nombre; });
+
+    // Asistencia media
+    const clasesRealizadasIds = new Set(clasesF.filter(c=>c.estado==='Realizada').map(c=>c.id));
+    const asistArr = (claseAsistencia.data||[]).filter(a=>clasesRealizadasIds.has(a.clase_id));
+    const asistenciaMedia = asistArr.length ? Math.round(asistArr.filter(a=>a.asistio).length/asistArr.length*100) : 0;
+
+    // Ejercicios por clase
+    const ejPorClase = clasesRealizadasIds.size
+      ? (claseEjercicios.data||[]).filter(e=>clasesRealizadasIds.has(e.clase_id)).length/clasesRealizadasIds.size : 0;
+
+    // Cobros pendientes (tipo = 'Pendiente')
+    const cobrosPend = (cobros.data||[]).filter(c=>c.tipo==='Pendiente');
+
+    // Clases programadas esta semana (para alerta en General)
+    const lun = new Date(hoy); lun.setDate(hoy.getDate()-((hoy.getDay()+6)%7));
+    const dom = new Date(lun); dom.setDate(lun.getDate()+6);
+    const sIni=lun.toISOString().slice(0,10), sFin=dom.toISOString().slice(0,10);
+    const clasesProgramadasSemana = (clases.data||[]).filter(c=>c.estado==='Programada'&&c.fecha>=sIni&&c.fecha<=sFin).length;
+
+    // Ranking jugadores
+    const puntos = {};
+    (partidos.data||[]).forEach(p=>{
+      if(!p.pareja_a||!p.pareja_b) return;
+      const pA=+(p.resultado_a||0), pB=+(p.resultado_b||0);
+      if(pA===0&&pB===0) return;
+      [p.pareja_a,p.pareja_b].forEach((par,idx)=>{
+        const gana = idx===0?pA>pB:pB>pA;
+        par.split(',').map(n=>n.trim()).filter(Boolean).forEach(n=>{
+          puntos[n]=(puntos[n]||0)+(gana?2:1);
+        });
+      });
+    });
+    const rankingJugadores = Object.entries(puntos)
+      .map(([nombre,p])=>({nombre,puntos:p}))
+      .sort((a,b)=>b.puntos-a.puntos).slice(0,8);
+
+    // Media jugadores/torneo
+    const mediajugadoresTorneo = (torneos.data||[]).length
+      ? Math.round((participantes.data||[]).length/(torneos.data||[]).length) : 0;
+
+    // Media cobro por alumno
+    const alumnosConCobro = new Set(cobrosF.map(c=>c.alumno_id).filter(Boolean));
+    const mediaAlumno = alumnosConCobro.size
+      ? cobrosF.reduce((s,c)=>s+(+c.importe||0),0)/alumnosConCobro.size : 0;
+
+    // Clases estado
+    const estMap = {};
+    clasesF.forEach(c=>{ estMap[c.estado]=(estMap[c.estado]||0)+1; });
+
+    // Bloques pistas
+    const semanaIds = (semanas.data||[]).map(s=>s.id);
+    let bloquesData = [];
+    if (semanaIds.length) {
+      const {data:bl} = await _sb.from('bloques_pista').select('pista,tipo,hora_inicio').in('semana_id',semanaIds);
+      bloquesData = bl||[];
+    }
+
+    // Nivel alumnos
+    const alumnosPorNivel = {};
+    (alumnos.data||[]).forEach(a=>{ if(a.nivel) alumnosPorNivel[a.nivel]=(alumnosPorNivel[a.nivel]||0)+1; });
+
+    _datos = {
+      totalAlumnos:    (alumnos.data||[]).length,
+      alumnosNuevos:   desdeStr?(alumnos.data||[]).filter(a=>a.created_at>=desdeStr).length:0,
+      alumnosPorNivel,
+      totalGrupos:     (grupos.data||[]).length,
+      gruposConAlumnos, gruposMap,
+      totalEjercicio:  (ejerciciosActivos.data||[]).length,
+      ejerciciosTotal: (ejerciciosTodos.data||[]).length,
+      ejercicios:      ejerciciosActivos.data||[],
+      totalClases:     clasesF.length,
+      clasesPorEstado: estMap,
+      clasesData:      clasesF,
+      asistenciaMedia, ejerciciosPorClase:ejPorClase,
+      clasesRealizadas:estMap['Realizada']||0,
+      clasesProgramadasSemana,
+      totalTorneos:    (torneos.data||[]).length,
+      torneosEnCurso:  (torneos.data||[]).filter(t=>t.estado==='en_curso').length,
+      torneosFinalizados:(torneos.data||[]).filter(t=>t.estado==='finalizado').length,
+      torneosData:     torneos.data||[],
+      rankingJugadores, mediajugadoresTorneo,
+      totalCobrado:    cobrosF.reduce((s,c)=>s+(+c.importe||0),0),
+      totalPendiente:  cobrosPend.reduce((s,c)=>s+(+c.importe||0),0),
+      numCobros:       cobrosF.length,
+      numPendientes:   cobrosPend.length,
+      mediaAlumno,
+      cobrosData:      cobros.data||[],
+      semanas:         (semanas.data||[]).length,
+      bloques:         bloquesData.length,
+      bloquesData,
+    };
+    renderStats();
+  } catch(e) {
+    showError('stats-contenido','Error al cargar estadísticas');
+    console.error(e);
+  }
+}
+
+async function init() {
+  await initStore();
+  renderHeader({titulo:'Escuela de Pádel',subtitulo:'Estadísticas',icono:'icons/stats.png',botonDerecho:null});
+  renderNav('stats');
+  await cargar();
+}
+init();
+</script>
+</body>
+</html>
