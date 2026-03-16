@@ -377,34 +377,46 @@ function cancelarNuevoMonitor() { document.getElementById('nuevo-monitor-wrap').
 
 async function init() {
   if (!semanaId) { window.location.href='pistas.html'; return; }
-  await initStore();
-  const { data } = await _sb.from('semanas_pista').select('*, bloques_pista(*)').eq('id',semanaId).single();
-  _semana = data;
-  _grupos = await getGrupos();
+  try {
+    await initStore();
+    const { data, error } = await _sb.from('semanas_pista').select('*, bloques_pista(*)').eq('id',semanaId).single();
+    if (error) throw error;
+    _semana = data;
+    _grupos = await getGrupos();
 
-  // Cargar tipos y monitores dinámicos
-  const cfgTipos = await getConfig('tipos_bloque');
-  if (cfgTipos && cfgTipos.length) _cfgTiposBloq = cfgTipos;
-  const cfgMon = await getConfig('monitores');
-  if (cfgMon && cfgMon.length) _cfgMonitores = cfgMon;
-  fillTipoSelect('Clase');
-  fillMonitorSelect('');
+    // Cargar tipos y monitores dinámicos (sin lanzar si no existen)
+    try {
+      const cfgTipos = await getConfig('tipos_bloque');
+      if (cfgTipos && cfgTipos.length) _cfgTiposBloq = cfgTipos;
+    } catch(e) {}
+    try {
+      const cfgMon = await getConfig('monitores');
+      if (cfgMon && cfgMon.length) _cfgMonitores = cfgMon;
+    } catch(e) {}
 
-  // Cargar grupos en select
-  const sel = document.getElementById('bl-grupo');
-  _grupos.forEach(g => { const o=document.createElement('option'); o.value=g.id; o.textContent=g.nombre; sel.appendChild(o); });
+    fillTipoSelect('Clase');
+    fillMonitorSelect('');
 
-  renderHeader({
-    titulo:    'Escuela de Pádel',
-    subtitulo: `${formatRango(_semana.fecha_inicio)} · ${_semana.num_pistas||3} pistas`,
-    icono:     'icons/pistas.png',
-    botonDerecho: 'back',
-    onBack:    'pistas.html',
-  });
-  renderNav('pistas');
+    // Cargar grupos en select
+    const sel = document.getElementById('bl-grupo');
+    _grupos.forEach(g => { const o=document.createElement('option'); o.value=g.id; o.textContent=g.nombre; sel.appendChild(o); });
 
-  renderTabs();
-  renderPistas();
+    renderHeader({
+      titulo:    'Escuela de Pádel',
+      subtitulo: `${_semana ? formatRango(_semana.fecha_inicio) : 'Semana'} · ${_semana?.num_pistas||3} pistas`,
+      icono:     'icons/pistas.png',
+      botonDerecho: 'back',
+      onBack:    'pistas.html',
+    });
+    renderNav('pistas');
+    renderTabs();
+    renderPistas();
+  } catch(e) {
+    console.error('Error cargando pistas:', e);
+    renderHeader({ titulo:'Escuela de Pádel', subtitulo:'Pistas', icono:'icons/pistas.png', botonDerecho:'back', onBack:'pistas.html' });
+    renderNav('pistas');
+    document.getElementById('contenido-pistas').innerHTML = '<div class="empty-state">Error al cargar la semana. <a href="pistas.html">Volver</a></div>';
+  }
 }
 init();
 </script>

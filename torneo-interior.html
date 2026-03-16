@@ -201,7 +201,9 @@ function clasificacion(partidos, participantes, esRobin) {
 
 function renderClasificacion(partidos, participantes) {
   const esRobin = _torneo && _torneo.tipo === 'Round Robin';
-  const cls = clasificacion(partidos, participantes, esRobin);
+  // Solo partidos de jornadas <= jornada actual (puntos acumulados hasta aquí)
+  const partidosHasta = partidos.filter(p => p.jornada <= _jornada);
+  const cls = clasificacion(partidosHasta, participantes, esRobin);
   if (!cls.length) return '<div class="empty-state">Sin partidos validados aún</div>';
   const medals=['🥇','🥈','🥉'];
   const tieneRol = participantes.some(p=>p.rol&&p.rol!=='jugador');

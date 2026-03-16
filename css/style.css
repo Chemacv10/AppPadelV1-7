@@ -104,35 +104,36 @@ input, select, textarea { font-family: Nunito, sans-serif; }
 /* ── Navegación ──────────────────────────────── */
 nav, .nav {
   background: var(--card);
-  padding: 8px 8px 6px;
+  padding: 10px 8px 8px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
+  gap: 6px;
   border-top: 1.5px solid var(--borde);
   border-bottom: 1.5px solid var(--borde);
   flex-shrink: 0;
 }
 
 .nav-item {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 5px 3px 4px;
-  border-radius: 12px;
-  border: 2px solid transparent;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 8px 4px 7px;
+  border-radius: 16px;
+  border: 2.5px solid transparent;
   cursor: pointer;
-  transition: background .15s;
+  transition: background .15s, border-color .15s;
   text-decoration: none;
+  background: #f8fafc;
 }
 .nav-item:hover  { background: #f1f5f9; }
 .nav-item.active { background: #eff6ff; border-color: var(--azul); }
 
 .nav-icon {
-  width: 52px; height: 52px;
+  width: 56px; height: 56px;
   display: flex; align-items: center; justify-content: center;
-  background: #f1f5f9;
-  border-radius: 12px;
+  background: none;
+  border-radius: 0;
 }
-.nav-item.active .nav-icon { background: #dbeafe; }
-.nav-icon img { width: 36px; height: 36px; object-fit: contain; }
+.nav-item.active .nav-icon { background: none; }
+.nav-icon img { width: 52px; height: 52px; object-fit: contain; }
 
 .nav-label {
   font-size: 9px; font-weight: 800;

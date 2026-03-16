@@ -277,7 +277,7 @@ function renderAlertas({ clases, torneos, alumnos }) {
     return c.estado==='Programada' && f>=hoy && f<=en7;
   });
   if (sinPista.length)
-    alertas.push({ tipo:'info', ico:'📋', titulo:`${sinPista.length} clase${sinPista.length>1?'s':''} programadas esta semana`, sub:'Comprueba que tienen pista asignada', href:'clases.html' });
+    alertas.push({ tipo:'info', ico:'📋', titulo:`${sinPista.length} clase${sinPista.length>1?'s':''} programada${sinPista.length>1?'s':''} pendiente${sinPista.length>1?'s':''}`, sub:'En el módulo Clases, pendiente de marcar como realizada', href:'clases.html' });
 
   // Torneos en curso
   const activos = (torneos||[]).filter(t => t.estado==='activo'||t.estado==='en_curso');

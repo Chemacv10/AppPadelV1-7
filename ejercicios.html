@@ -346,7 +346,21 @@ async function guardar() {
     closeSheet('sh-ej');
     toast('Ejercicio guardado','ok');
     await cargar();
-  } catch(e) { toast('Error al guardar','err'); console.error(e); }
+  } catch(e) {
+    // Si falla por columna video_url inexistente en BD, reintentar sin ella
+    if (e.message && e.message.includes('video_url')) {
+      try {
+        const { video_url, ...ejSin } = ej;
+        await saveEjercicio(ejSin);
+        closeSheet('sh-ej');
+        toast('Ejercicio guardado (sin vídeo — ejecuta el ALTER TABLE)','ok');
+        await cargar();
+      } catch(e2) { toast('Error al guardar: ' + (e2.message||e2), 'err'); console.error(e2); }
+    } else {
+      toast('Error al guardar: ' + (e.message||e), 'err');
+      console.error(e);
+    }
+  }
 }
 
 async function noUsar(id) {

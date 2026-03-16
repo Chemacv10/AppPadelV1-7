@@ -456,9 +456,17 @@ function selEstado(btn,estado){
 
 async function cargarAsistencia(){
   const grupoId=document.getElementById('cl-grupo').value;
-  // Si no hay grupo (ej: clase particular), cargamos todos los alumnos
   const todosAlumnos=await getAlumnos();
-  const alumnos=grupoId ? todosAlumnos.filter(a=>a.grupo_id===grupoId) : todosAlumnos;
+  let alumnos;
+  if (grupoId) {
+    // Clase de grupo: alumnos de ese grupo
+    alumnos = todosAlumnos.filter(a=>a.grupo_id===grupoId);
+  } else {
+    // Clase particular / sin grupo: alumnos sin grupo asignado
+    // Si no hay ninguno sin grupo, mostramos todos para no dejar la lista vacía
+    const sinGrupo = todosAlumnos.filter(a=>!a.grupo_id);
+    alumnos = sinGrupo.length ? sinGrupo : todosAlumnos;
+  }
   let asistPrev={};
   if(_editId){const c=_clases.find(x=>x.id===_editId);(c?.clase_asistencia||[]).forEach(a=>asistPrev[a.alumno_id]=a.asistio)}
   document.getElementById('lista-asistencia').innerHTML=alumnos.map(a=>{
